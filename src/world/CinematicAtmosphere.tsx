@@ -6,8 +6,10 @@ import {
   BufferAttribute,
   HalfFloatType,
   Vector2,
+  Vector3,
   WebGLRenderTarget,
   type BufferGeometry,
+  type Group,
 } from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -64,8 +66,22 @@ function RenderPipeline({
 }) {
   const { gl, scene, camera, size } = useThree();
   const pipeline = useRef<EffectComposer | null>(null);
+  const hud = useRef<Group>(null);
+  const hudDirection = useRef(new Vector3());
+  const shadowWarmup = useRef(3);
   const timer = useRef({ frames: 0, seconds: 0, calls: 0, triangles: 0 });
   const [stats, setStats] = useState("");
+  useEffect(() => {
+    // Buildings, furniture and the sun are fixed. Cache their shadow map instead
+    // of drawing the whole district a second time on every animation frame.
+    const previous = gl.shadowMap.autoUpdate;
+    gl.shadowMap.autoUpdate = false;
+    shadowWarmup.current = 3;
+    return () => {
+      gl.shadowMap.autoUpdate = previous;
+      gl.shadowMap.needsUpdate = true;
+    };
+  }, [gl]);
   useEffect(() => {
     if (!enabled) return;
     const target = new WebGLRenderTarget(1, 1, {
@@ -94,6 +110,14 @@ function RenderPipeline({
     pipeline.current?.setSize(size.width, size.height);
   }, [size]);
   useFrame((_, dt) => {
+    if (hud.current) {
+      camera.getWorldDirection(hudDirection.current);
+      hud.current.position.copy(camera.position).add(hudDirection.current);
+    }
+    if (shadowWarmup.current > 0) {
+      gl.shadowMap.needsUpdate = true;
+      shadowWarmup.current--;
+    }
     const oldReset = gl.info.autoReset;
     gl.info.autoReset = false;
     gl.info.reset();
@@ -115,22 +139,31 @@ function RenderPipeline({
     gl.info.autoReset = oldReset;
   }, 1);
   return diagnostics ? (
-    <Html fullscreen style={{ pointerEvents: "none" }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 105,
-          right: 30,
-          padding: "9px 12px",
-          background: "#102330dd",
-          color: "#c8dfdc",
-          font: "12px monospace",
-        }}
+    <group ref={hud}>
+      <Html
+        fullscreen
+        calculatePosition={(_, __, viewport) => [
+          viewport.width / 2,
+          viewport.height / 2,
+        ]}
+        style={{ pointerEvents: "none" }}
       >
-        {enabled ? "Cinematic" : "Performance"} · {stats}
-        <br />V toggles bloom / rain
-      </div>
-    </Html>
+        <div
+          style={{
+            position: "absolute",
+            top: 105,
+            right: 30,
+            padding: "9px 12px",
+            background: "#102330dd",
+            color: "#c8dfdc",
+            font: "12px monospace",
+          }}
+        >
+          {enabled ? "Cinematic" : "Performance"} · {stats}
+          <br />V toggles bloom / rain
+        </div>
+      </Html>
+    </group>
   ) : null;
 }
 

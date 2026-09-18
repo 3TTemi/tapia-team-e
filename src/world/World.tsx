@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { Vector3, type Group } from "three";
@@ -9,6 +9,9 @@ import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
 import { movePlayer } from "./movement";
 import { Solid, WorldMaterials, Plant } from "./ArtPrimitives";
 import StylizedCharacter from "./StylizedCharacter";
+import OpeningCinematic from "./OpeningCinematic";
+import { OPENING_HANDOFF, type OpeningShot } from "./openingTimeline";
+import type { OpeningAudio } from "./openingAudio";
 
 function Block({
   position,
@@ -235,17 +238,23 @@ function Player({
   keyboardMode,
   onTarget,
   onLock,
+  enterAtBank,
 }: {
   active: boolean;
   keyboardMode: boolean;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
+  enterAtBank: boolean;
 }) {
   const { camera, gl } = useThree();
   const keys = useRef(new Set<string>());
   const previous = useRef<TargetId | null>(null);
   const direction = useRef(new Vector3());
   const deltaVector = useRef(new Vector3());
+  useEffect(() => {
+    camera.position.set(...(enterAtBank ? OPENING_HANDOFF : PLAYER_SPAWN));
+    camera.rotation.set(0, 0, 0, "YXZ");
+  }, [camera, enterAtBank]);
   useEffect(() => {
     camera.rotation.order = "YXZ";
     const down = (e: KeyboardEvent) => {
@@ -288,6 +297,13 @@ function Player({
     };
   }, [active, keyboardMode, camera, gl, onLock]);
   useFrame((_, dt) => {
+    if (!active) {
+      if (previous.current !== null) {
+        previous.current = null;
+        onTarget(null);
+      }
+      return;
+    }
     if (
       active &&
       (keyboardMode || document.pointerLockElement === gl.domElement)
@@ -363,6 +379,12 @@ export default function World({
   target,
   onTarget,
   onLock,
+  cinematic,
+  skipIntro,
+  introAudio,
+  onIntroShot,
+  onIntroComplete,
+  enterAtBank,
 }: {
   active: boolean;
   keyboardMode: boolean;
@@ -370,6 +392,12 @@ export default function World({
   target: TargetId | null;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
+  cinematic: boolean;
+  skipIntro: boolean;
+  introAudio: RefObject<OpeningAudio>;
+  onIntroShot: (shot: OpeningShot) => void;
+  onIntroComplete: () => void;
+  enterAtBank: boolean;
 }) {
   return (
     <Canvas
@@ -378,15 +406,39 @@ export default function World({
       camera={{ position: PLAYER_SPAWN, fov: 65, near: 0.1, far: 160 }}
       gl={{ antialias: true }}
     >
-      <WorldMaterials>
-        <Room collected={collected} target={target} />
-        <Player
-          active={active}
-          keyboardMode={keyboardMode}
-          onTarget={onTarget}
-          onLock={onLock}
-        />
-      </WorldMaterials>
+      <Suspense
+        fallback={
+          <Html
+            center
+            style={{
+              color: "#dce5d6",
+              whiteSpace: "nowrap",
+              font: "14px sans-serif",
+            }}
+          >
+            Opening the café…
+          </Html>
+        }
+      >
+        <WorldMaterials>
+          <Room collected={collected} target={target} />
+          <Player
+            active={active}
+            keyboardMode={keyboardMode}
+            onTarget={onTarget}
+            onLock={onLock}
+            enterAtBank={enterAtBank}
+          />
+          {cinematic && (
+            <OpeningCinematic
+              skipRequested={skipIntro}
+              audio={introAudio}
+              onShot={onIntroShot}
+              onComplete={onIntroComplete}
+            />
+          )}
+        </WorldMaterials>
+      </Suspense>
     </Canvas>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { Position } from "../game/types";
@@ -30,44 +30,85 @@ export default function StylizedCharacter({
   color,
   name,
   children,
+  pose = "standing",
+  animationTime,
 }: {
   position: Position;
   color: string;
   name: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  pose?: "standing" | "seated" | "walking" | "running";
+  animationTime?: RefObject<number>;
 }) {
   const body = useRef<Group>(null),
     head = useRef<Group>(null);
+  const legs = useRef<(Group | null)[]>([]);
   const skin =
     name === "Alex" ? "#946544" : name === "Jordan" ? "#c3946f" : "#c2a07a";
   useFrame(({ clock }) => {
+    const time = animationTime?.current ?? clock.elapsedTime;
     if (body.current)
       body.current.position.y =
-        Math.sin(clock.elapsedTime * 1.5 + position[0]) * 0.012;
+        pose === "seated"
+          ? -0.18
+          : pose === "running"
+            ? Math.abs(Math.sin(time * 14)) * 0.055
+            : Math.sin(time * 1.5 + position[0]) * 0.012;
+    if (pose === "running" || pose === "walking")
+      legs.current.forEach((leg, i) => {
+        if (leg)
+          leg.rotation.x =
+            Math.sin(time * (pose === "running" ? 14 : 7) + i * Math.PI) *
+            (pose === "running" ? 0.65 : 0.3);
+      });
     if (head.current)
       head.current.rotation.y =
-        Math.sin(clock.elapsedTime * 0.45 + position[0]) * 0.065;
+        pose === "standing" ? Math.sin(time * 0.45 + position[0]) * 0.065 : 0;
   });
   return (
     <group position={position}>
-      <group ref={body}>
-        {[-0.17, 0.17].map((x) => (
-          <group key={x}>
-            <Limb
-              position={[x, 0.5, 0]}
-              length={0.57}
-              radius={0.13}
-              color="#243948"
-            />
+      <group ref={body} position={[0, pose === "seated" ? -0.18 : 0, 0]}>
+        {[-0.17, 0.17].map((x, i) => (
+          <group
+            key={x}
+            ref={(node) => {
+              legs.current[i] = node;
+            }}
+            position={[0, pose === "seated" ? 0.96 : 0.78, 0]}
+          >
+            {pose === "seated" ? (
+              <>
+                <Limb
+                  position={[x, -0.085, 0.25]}
+                  length={0.3}
+                  radius={0.095}
+                  color="#243948"
+                  rotation={[Math.PI / 2, 0, 0]}
+                />
+                <Limb
+                  position={[x, -0.47, 0.49]}
+                  length={0.42}
+                  radius={0.09}
+                  color="#243948"
+                />
+              </>
+            ) : (
+              <Limb
+                position={[x, -0.28, 0]}
+                length={0.57}
+                radius={0.13}
+                color="#243948"
+              />
+            )}
             <Solid
-              position={[x, 0.1, 0.1]}
+              position={[x, -0.68, pose === "seated" ? 0.56 : 0.1]}
               size={[0.27, 0.17, 0.47]}
               round={0.075}
               color="#34464d"
               rough={0.75}
             />
             <Solid
-              position={[x, 0.045, 0.1]}
+              position={[x, -0.735, pose === "seated" ? 0.56 : 0.1]}
               size={[0.28, 0.04, 0.46]}
               round={0.018}
               color="#aeb5a8"
@@ -98,32 +139,61 @@ export default function StylizedCharacter({
           round={0.01}
           color="#d9d5bd"
         />
-        <Limb
-          position={[-0.42, 1.03, 0]}
-          length={0.4}
-          radius={0.115}
-          color={color}
-          rotation={[0.12, 0, -0.12]}
-        />
-        <Limb
-          position={[0.42, 1.03, 0]}
-          length={0.4}
-          radius={0.115}
-          color={color}
-          rotation={[-0.07, 0, 0.12]}
-        />
-        <Limb
-          position={[-0.45, 0.69, 0.03]}
-          length={0.09}
-          radius={0.09}
-          color={skin}
-        />
-        <Limb
-          position={[0.45, 0.69, 0.03]}
-          length={0.09}
-          radius={0.09}
-          color={skin}
-        />
+        {pose === "seated" ? (
+          [-1, 1].map((side) => (
+            <group key={side}>
+              <Limb
+                position={[side * 0.35, 1.17, 0.06]}
+                length={0.24}
+                radius={0.1}
+                color={color}
+                rotation={[-0.32, 0, -side * 0.09]}
+              />
+              <Limb
+                position={[side * 0.32, 1, 0.15]}
+                length={0.14}
+                radius={0.075}
+                color={color}
+                rotation={[Math.PI / 2, 0, 0]}
+              />
+              <Limb
+                position={[side * 0.28, 0.98, 0.22]}
+                length={0.055}
+                radius={0.065}
+                color={skin}
+              />
+            </group>
+          ))
+        ) : (
+          <>
+            <Limb
+              position={[-0.42, 1.03, 0]}
+              length={0.4}
+              radius={0.115}
+              color={color}
+              rotation={[0.12, 0, -0.12]}
+            />
+            <Limb
+              position={[0.42, 1.03, 0]}
+              length={0.4}
+              radius={0.115}
+              color={color}
+              rotation={[-0.07, 0, 0.12]}
+            />
+            <Limb
+              position={[-0.45, 0.69, 0.03]}
+              length={0.09}
+              radius={0.09}
+              color={skin}
+            />
+            <Limb
+              position={[0.45, 0.69, 0.03]}
+              length={0.09}
+              radius={0.09}
+              color={skin}
+            />
+          </>
+        )}
         <Limb position={[0, 1.46, 0]} length={0.08} radius={0.1} color={skin} />
         <group ref={head} position={[0, 1.73, 0]}>
           <mesh scale={[0.275, 0.32, 0.255]} castShadow>

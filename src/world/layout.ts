@@ -1,4 +1,5 @@
 import type { Position } from "../game/types";
+import { CAFE_SEAT_ROWS } from "./cafeLayout";
 
 // World coordinates stay separate from the art so another renderer can reuse the
 // same entrances, furniture footprints, and investigation positions.
@@ -245,12 +246,12 @@ export const worldStructures: WorldStructure[] = [
     height: 0.85,
     surface: "wood" as const,
   })),
-  ...[26, 28, 31, 33].map((z) => ({
+  ...CAFE_SEAT_ROWS.map((z) => ({
     id: `cafe-seat-${z}`,
     x: 4.8,
     z,
-    width: 1.8,
-    depth: 0.5,
+    width: 1.98,
+    depth: 0.75,
     height: 0.48,
     surface: "seat" as const,
   })),

@@ -8,6 +8,7 @@ import {
   Solid,
 } from "./ArtPrimitives";
 import type { Position } from "../game/types";
+import { CAFE_CHAIR_OFFSET, CAFE_CHAIR_XS, CAFE_TABLE_ZS } from "./cafeLayout";
 
 function Pendant({ position }: { position: Position }) {
   return (
@@ -196,22 +197,30 @@ function Laptop({ position }: { position: Position }) {
         metal={0.8}
         round={0.017}
       />
-      <Solid
-        position={[0, 0.24, -0.2]}
-        size={[0.7, 0.46, 0.035]}
-        color="#364952"
-        metal={0.8}
-        round={0.016}
-        rotation={[-0.12, 0, 0]}
+      <Cylinder
+        position={[0, 0.035, -0.2]}
+        radius={0.025}
+        height={0.66}
+        color="#526773"
+        rotation={[0, 0, Math.PI / 2]}
       />
-      <Sign
-        position={[0, 0.245, -0.159]}
-        title="GOOD EVENING"
-        subtitle="TAKE A MOMENT. FIND YOUR FOCUS."
-        width={0.61}
-        height={0.34}
-        color="#a4c9c3"
-      />
+      <group position={[0, 0.045, -0.2]} rotation={[-0.12, 0, 0]}>
+        <Solid
+          position={[0, 0.225, 0]}
+          size={[0.7, 0.46, 0.035]}
+          color="#364952"
+          metal={0.8}
+          round={0.016}
+        />
+        <Sign
+          position={[0, 0.235, 0.021]}
+          title="GOOD EVENING"
+          subtitle="TAKE A MOMENT. FIND YOUR FOCUS."
+          width={0.61}
+          height={0.34}
+          color="#a4c9c3"
+        />
+      </group>
       {[0, 1, 2].map((i) => (
         <Solid
           key={i}
@@ -357,7 +366,7 @@ export default function CafeDetails() {
         )),
       )}
       <Sign
-        position={[-4.24, 0.72, 28.4]}
+        position={[-4.18, 0.72, 28.4]}
         title="FRESHLY BAKED"
         subtitle="SOMETHING GOOD, EVERY DAY"
         width={1.6}
@@ -401,12 +410,12 @@ export default function CafeDetails() {
         background="#182e2d"
         border
       />
-      {[27, 32].map((z) => (
+      {CAFE_TABLE_ZS.map((z) => (
         <group key={z}>
           <Cylinder
-            position={[4.8, 0.38, z]}
+            position={[4.8, 0.4, z]}
             radius={0.075}
-            height={0.76}
+            height={0.8}
             color={art.brass}
             metal={0.8}
           />
@@ -420,19 +429,19 @@ export default function CafeDetails() {
           <Solid
             position={[4.8, 0.86, z]}
             size={[2.1, 0.12, 1.5]}
-            round={0.15}
+            round={0.045}
             texture="stone"
             color="#bfc6bc"
             rough={0.27}
           />
-          <Laptop position={[4.7, 0.93, z - 0.1]} />
-          <CoffeeCup position={[5.52, 0.93, z + 0.2]} ceramic />
-          {[4.35, 5.23].flatMap((x) =>
+          <Laptop position={[4.6, 0.925, z + 0.3]} />
+          <CoffeeCup position={[5.28, 0.92, z + 0.3]} ceramic />
+          {CAFE_CHAIR_XS.flatMap((x) =>
             [-1, 1].map((side) => (
               <Chair
                 key={`${x}-${side}`}
-                position={[x, 0, z + side]}
-                rotation={side < 0 ? Math.PI : 0}
+                position={[x, 0, z + side * CAFE_CHAIR_OFFSET]}
+                rotation={side > 0 ? Math.PI : 0}
               />
             )),
           )}

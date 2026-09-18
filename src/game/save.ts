@@ -1,7 +1,7 @@
 import type { SaveGame } from "./types";
 import { clues, suspects } from "./case";
 
-const KEY = "last-commit-save-v1";
+const KEY = "last-commit-bank-save-v2";
 export const freshGame = (): SaveGame => ({
   version: 1,
   clues: [],
