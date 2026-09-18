@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { Vector3, type Group } from "three";
 import { clues, obstacles, suspects } from "../game/case";
-import type { ClueId, Position, TargetId } from "../game/types";
+import type { ClueId, Position, SuspectId, TargetId } from "../game/types";
 import CityEnvironment from "./CityEnvironment";
 import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
 import { movePlayer } from "./movement";
@@ -69,23 +69,63 @@ function Label({
   );
 }
 
+function SpeechBubble({
+  name,
+  text,
+  thinking,
+}: {
+  name: string;
+  text: string;
+  thinking: boolean;
+}) {
+  return (
+    <Html style={{ pointerEvents: "none" }} zIndexRange={[20, 0]}>
+      <div
+        className={`speech-bubble ${thinking ? "thinking" : ""}`}
+        aria-live="polite"
+      >
+        <small>{name}</small>
+        <p>{thinking ? "..." : text}</p>
+      </div>
+    </Html>
+  );
+}
+
 function Hacker({
   position,
   color,
   name,
   role,
+  speaking,
+  line,
+  thinking,
 }: {
   position: Position;
   color: string;
   name: string;
   role: string;
+  speaking: boolean;
+  line: string | null;
+  thinking: boolean;
 }) {
   return (
-    <StylizedCharacter position={position} color={color} name={name}>
-      <Label position={[0, 2.4, 0]}>
-        <span style={{ color }}>{name}</span>
-        <small>{role}</small>
-      </Label>
+    <StylizedCharacter
+      position={position}
+      color={color}
+      name={name}
+      speaking={speaking}
+      facing={Boolean(line)}
+    >
+      {line ? (
+        <group position={[0, 2.15, 0]}>
+          <SpeechBubble name={name} text={line} thinking={thinking} />
+        </group>
+      ) : (
+        <Label position={[0, 2.4, 0]}>
+          <span style={{ color }}>{name}</span>
+          <small>{role}</small>
+        </Label>
+      )}
     </StylizedCharacter>
   );
 }
@@ -154,9 +194,17 @@ function Monitor({
 function Room({
   collected,
   target,
+  talkingTo,
+  speaking,
+  bubbleText,
+  thinking,
 }: {
   collected: ClueId[];
   target: TargetId | null;
+  talkingTo: SuspectId | null;
+  speaking: boolean;
+  bubbleText: string | null;
+  thinking: boolean;
 }) {
   return (
     <>
@@ -208,7 +256,13 @@ function Room({
         color="#b784a7"
       />
       {suspects.map((s) => (
-        <Hacker key={s.id} {...s} />
+        <Hacker
+          key={s.id}
+          {...s}
+          speaking={talkingTo === s.id && speaking}
+          thinking={talkingTo === s.id && thinking}
+          line={talkingTo === s.id ? bubbleText : null}
+        />
       ))}
       {clues.map((c) => (
         <group
@@ -361,6 +415,10 @@ export default function World({
   keyboardMode,
   collected,
   target,
+  talkingTo,
+  speaking,
+  bubbleText,
+  thinking,
   onTarget,
   onLock,
 }: {
@@ -368,6 +426,10 @@ export default function World({
   keyboardMode: boolean;
   collected: ClueId[];
   target: TargetId | null;
+  talkingTo: SuspectId | null;
+  speaking: boolean;
+  bubbleText: string | null;
+  thinking: boolean;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
 }) {
@@ -379,7 +441,14 @@ export default function World({
       gl={{ antialias: true }}
     >
       <WorldMaterials>
-        <Room collected={collected} target={target} />
+        <Room
+          collected={collected}
+          target={target}
+          talkingTo={talkingTo}
+          speaking={speaking}
+          bubbleText={bubbleText}
+          thinking={thinking}
+        />
         <Player
           active={active}
           keyboardMode={keyboardMode}

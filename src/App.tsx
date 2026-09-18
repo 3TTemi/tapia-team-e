@@ -7,7 +7,7 @@ import {
   Accusation,
   CaseBrief,
   CluePanel,
-  DialoguePanel,
+  DialogueHud,
   Ending,
   Notebook,
 } from "./ui/Panels";
@@ -21,6 +21,9 @@ export default function App() {
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [target, setTarget] = useState<TargetId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  const [talkingTo, setTalkingTo] = useState<SuspectId | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     if (!persistGame(game))
@@ -31,6 +34,9 @@ export default function App() {
   const resume = useCallback(() => {
     setStarted(true);
     setPanel(null);
+    setTalkingTo(null);
+    setThinking(false);
+    setSpeaking(false);
     if (keyboardMode) return;
     const canvas = document.querySelector("canvas");
     if (!canvas?.requestPointerLock) {
@@ -54,6 +60,16 @@ export default function App() {
   }, [keyboardMode]);
   const open = useCallback((next: Panel) => {
     document.exitPointerLock?.();
+    if (suspects.some((s) => s.id === next)) {
+      setTalkingTo(next as SuspectId);
+      setPanel(null);
+      setThinking(false);
+      setSpeaking(true);
+      return;
+    }
+    setTalkingTo(null);
+    setThinking(false);
+    setSpeaking(false);
     setPanel(next);
     const clue = clues.find((c) => c.id === next);
     if (clue)
@@ -72,6 +88,17 @@ export default function App() {
       )
         return;
       if (!started || panel || e.repeat) return;
+      if (talkingTo) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          resume();
+        }
+        if (e.code === "KeyN") {
+          e.preventDefault();
+          open("notebook");
+        }
+        return;
+      }
       if (e.code === "KeyE" && (locked || keyboardMode) && target) {
         e.preventDefault();
         open(target);
@@ -83,13 +110,30 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [started, panel, locked, keyboardMode, target, open]);
+  }, [started, panel, talkingTo, locked, keyboardMode, target, open, resume]);
   const saveMessages = (id: SuspectId, messages: Message[]) =>
     setGame((prev) => ({
       ...prev,
       histories: { ...prev.histories, [id]: messages },
     }));
-  const suspect = suspects.find((s) => s.id === panel);
+  const talkingSuspect = suspects.find((s) => s.id === talkingTo);
+  const lastReply = talkingTo
+    ? [...game.histories[talkingTo]].reverse().find((m) => m.role === "suspect")
+        ?.text
+    : "";
+  useEffect(() => {
+    if (!talkingTo) {
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    if (thinking) return;
+    const timer = window.setTimeout(() => setSpeaking(false), 4200);
+    return () => window.clearTimeout(timer);
+  }, [talkingTo, thinking, lastReply]);
+  const bubbleText = talkingSuspect
+    ? (lastReply ?? talkingSuspect.opening)
+    : null;
   const clue = clues.find((c) => c.id === panel);
   const targetName =
     suspects.find((s) => s.id === target)?.name ??
@@ -98,10 +142,14 @@ export default function App() {
     <main className="game-shell">
       <div className={`world ${!started ? "world-intro" : ""}`}>
         <World
-          active={started && !panel}
+          active={started && !panel && !talkingTo}
           keyboardMode={keyboardMode}
           collected={game.clues}
           target={target}
+          talkingTo={talkingTo}
+          speaking={speaking}
+          bubbleText={bubbleText}
+          thinking={thinking}
           onTarget={setTarget}
           onLock={setLocked}
         />
@@ -150,7 +198,7 @@ export default function App() {
               / 3 suspects interviewed
             </p>
           </aside>
-          {!panel && (locked || keyboardMode) && (
+          {!panel && !talkingTo && (locked || keyboardMode) && (
             <>
               <div className={`crosshair ${target ? "has-target" : ""}`} />
               <div className="interaction-prompt">
@@ -172,7 +220,7 @@ export default function App() {
               </div>
             </>
           )}
-          {!panel && !locked && !keyboardMode && (
+          {!panel && !talkingTo && !locked && !keyboardMode && (
             <div className="pause-overlay">
               <section className="pause-card">
                 <span className="eyebrow">TAKE A BREATH, DETECTIVE.</span>
@@ -199,33 +247,45 @@ export default function App() {
               </section>
             </div>
           )}
-          <footer className="game-footer">
-            <div className="control-hints">
-              <span>
-                <kbd>W A S D</kbd> Move
-              </span>
-              <span>
-                <kbd>E</kbd> Interact
-              </span>
-              <span>
-                {keyboardMode ? (
-                  <>
-                    <kbd>Q / R</kbd> Turn <kbd>T / G</kbd> Look up/down
-                  </>
-                ) : (
-                  <>
-                    <kbd>ESC</kbd> Release mouse
-                  </>
-                )}
-              </span>
-            </div>
-            <button
-              className="notebook-button"
-              onClick={() => open("notebook")}
-            >
-              <kbd>N</kbd> Case notebook <span>{game.clues.length}/5</span>
-            </button>
-          </footer>
+          {!talkingTo && (
+            <footer className="game-footer">
+              <div className="control-hints">
+                <span>
+                  <kbd>W A S D</kbd> Move
+                </span>
+                <span>
+                  <kbd>E</kbd> Interact
+                </span>
+                <span>
+                  {keyboardMode ? (
+                    <>
+                      <kbd>Q / R</kbd> Turn <kbd>T / G</kbd> Look up/down
+                    </>
+                  ) : (
+                    <>
+                      <kbd>ESC</kbd> Release mouse
+                    </>
+                  )}
+                </span>
+              </div>
+              <button
+                className="notebook-button"
+                onClick={() => open("notebook")}
+              >
+                <kbd>N</kbd> Case notebook <span>{game.clues.length}/5</span>
+              </button>
+            </footer>
+          )}
+          {talkingSuspect && (
+            <DialogueHud
+              key={talkingSuspect.id}
+              suspect={talkingSuspect}
+              game={game}
+              onMessages={saveMessages}
+              onClose={resume}
+              onThinking={setThinking}
+            />
+          )}
         </>
       )}
       {panel && (
@@ -259,15 +319,6 @@ export default function App() {
               element.querySelector<HTMLButtonElement>("button")?.focus();
           }}
         >
-          {suspect && (
-            <DialoguePanel
-              key={suspect.id}
-              suspect={suspect}
-              game={game}
-              onMessages={saveMessages}
-              onClose={resume}
-            />
-          )}
           {clue && <CluePanel clue={clue} onClose={resume} />}
           {panel === "notebook" && (
             <Notebook

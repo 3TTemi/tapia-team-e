@@ -96,28 +96,31 @@ export function CluePanel({
   );
 }
 
-export function DialoguePanel({
+export function DialogueHud({
   suspect,
   game,
   onMessages,
   onClose,
+  onThinking,
 }: {
   suspect: Suspect;
   game: SaveGame;
   onMessages: (id: SuspectId, messages: Message[]) => void;
   onClose: () => void;
+  onThinking: (thinking: boolean) => void;
 }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const bottom = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLInputElement>(null);
   const history = game.histories[suspect.id];
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history.length]);
+    field.current?.focus();
+  }, [suspect.id]);
   async function send(message: string, presentedClue?: ClueId) {
     if (busy || !message.trim()) return;
     setBusy(true);
+    onThinking(true);
     setError("");
     try {
       const reply = await getReply({
@@ -133,85 +136,38 @@ export function DialoguePanel({
       ]);
       setInput("");
     } catch {
-      setError(
-        "The character could not respond. Your question is still here; try again.",
-      );
+      setError("They didn’t catch that. Try again.");
     } finally {
       setBusy(false);
+      onThinking(false);
+      field.current?.focus();
     }
   }
+  const collected = clues.filter((c) => game.clues.includes(c.id));
   return (
-    <section
-      className="panel dialogue-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Interview ${suspect.name}`}
-    >
-      <div className="panel-top">
-        <span className="eyebrow">INTERVIEW / {suspect.role}</span>
-        <button onClick={onClose} aria-label="End interview">
-          ✕
+    <aside className="dialogue-hud" aria-label={`Talking with ${suspect.name}`}>
+      <div className="dialogue-hud-top">
+        <span>
+          <strong>{suspect.name}</strong>
+          <span className="muted"> · {suspect.role.toLowerCase()}</span>
+        </span>
+        <button className="text-button" onClick={onClose}>
+          Walk away
         </button>
       </div>
-      <div className="suspect-heading">
-        <div
-          className="pixel-avatar"
-          style={{ "--avatar-color": suspect.color } as React.CSSProperties}
-        >
-          <i />
-        </div>
-        <div>
-          <h2>{suspect.name}</h2>
-          <p>
-            <span className="status-dot" /> In conversation{" "}
-            <span className="muted">· Scripted demo</span>
-          </p>
-        </div>
-      </div>
-      <div className="messages" aria-live="polite">
-        <div className="message suspect">
-          <small>{suspect.name}</small>
-          <p>{suspect.opening}</p>
-        </div>
-        {history.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
-            <small>{m.role === "player" ? "YOU" : suspect.name}</small>
-            <p>{m.text}</p>
-          </div>
-        ))}
-        {busy && <p className="muted">Thinking…</p>}
-        <div ref={bottom} />
-      </div>
-      <div className="present-evidence">
-        <span className="eyebrow muted">PRESENT EVIDENCE</span>
+      {collected.length > 0 && (
         <div className="chip-row">
-          {game.clues.length === 0 && (
-            <small>
-              Inspect the golden markers around the room to collect clues.
-            </small>
-          )}
-          {clues
-            .filter((c) => game.clues.includes(c.id))
-            .map((c) => (
-              <button
-                disabled={busy}
-                className="chip"
-                key={c.id}
-                onClick={() => send(`Explain this: ${c.title}.`, c.id)}
-              >
-                {c.icon} {c.title}
-              </button>
-            ))}
+          {collected.map((c) => (
+            <button
+              disabled={busy}
+              className="chip"
+              key={c.id}
+              onClick={() => send(`Explain this: ${c.title}.`, c.id)}
+            >
+              {c.icon} {c.title}
+            </button>
+          ))}
         </div>
-      </div>
-      {history.length === 0 && (
-        <button
-          className="suggestion"
-          disabled={busy}
-          onClick={() => send("Where were you when Sparky disappeared?")}
-        >
-          Ask: “Where were you when Sparky disappeared?” ↗
-        </button>
       )}
       {error && (
         <p role="alert" className="error">
@@ -226,25 +182,28 @@ export function DialoguePanel({
         }}
       >
         <input
+          ref={field}
           aria-label="Your question"
-          placeholder="Ask about their alibi…"
+          placeholder={`Talk to ${suspect.name}…`}
           maxLength={500}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              onClose();
+            }
+          }}
         />
         <button
           className="primary"
           disabled={busy || !input.trim()}
           type="submit"
         >
-          Ask ↗
+          Ask
         </button>
       </form>
-      <p className="panel-footnote">
-        Starter dialogue uses evidence rules. Free-form AI conversations are the
-        next team milestone.
-      </p>
-    </section>
+    </aside>
   );
 }
 

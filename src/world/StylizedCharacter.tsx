@@ -29,27 +29,63 @@ export default function StylizedCharacter({
   position,
   color,
   name,
+  speaking = false,
+  facing = false,
   children,
 }: {
   position: Position;
   color: string;
   name: string;
+  speaking?: boolean;
+  facing?: boolean;
   children: React.ReactNode;
 }) {
-  const body = useRef<Group>(null),
-    head = useRef<Group>(null);
+  const root = useRef<Group>(null);
+  const body = useRef<Group>(null);
+  const head = useRef<Group>(null);
+  const leftArm = useRef<Group>(null);
+  const rightArm = useRef<Group>(null);
+  const mouth = useRef<Group>(null);
   const skin =
     name === "Alex" ? "#946544" : name === "Jordan" ? "#c3946f" : "#c2a07a";
-  useFrame(({ clock }) => {
+  useFrame(({ camera, clock }) => {
+    const t = clock.elapsedTime + position[0];
+    if (root.current) {
+      const dx = camera.position.x - position[0];
+      const dz = camera.position.z - position[2];
+      const targetYaw = facing ? Math.atan2(dx, dz) : 0;
+      let diff = targetYaw - root.current.rotation.y;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      root.current.rotation.y += diff * 0.12;
+    }
     if (body.current)
       body.current.position.y =
-        Math.sin(clock.elapsedTime * 1.5 + position[0]) * 0.012;
-    if (head.current)
+        Math.sin(t * (speaking ? 7 : 1.5)) * (speaking ? 0.03 : 0.012);
+    if (head.current) {
+      head.current.rotation.x = speaking ? Math.sin(t * 9) * 0.08 : 0;
       head.current.rotation.y =
-        Math.sin(clock.elapsedTime * 0.45 + position[0]) * 0.065;
+        Math.sin(t * (speaking ? 3.2 : 0.45)) * (speaking ? 0.14 : 0.065);
+    }
+    if (leftArm.current) {
+      leftArm.current.rotation.x = speaking
+        ? 0.08 + Math.sin(t * 2.4) * 0.1
+        : 0.12;
+      leftArm.current.rotation.z = speaking ? -0.22 : -0.12;
+    }
+    if (rightArm.current) {
+      rightArm.current.rotation.x = speaking
+        ? -0.55 + Math.sin(t * 8.5) * 0.42
+        : -0.07;
+      rightArm.current.rotation.z = speaking ? 0.72 : 0.12;
+    }
+    if (mouth.current)
+      mouth.current.scale.y = speaking
+        ? 1.2 + Math.abs(Math.sin(t * 14)) * 3.4
+        : 1;
   });
   return (
-    <group position={position}>
+    <group ref={root} position={position}>
       <group ref={body}>
         {[-0.17, 0.17].map((x) => (
           <group key={x}>
@@ -98,32 +134,42 @@ export default function StylizedCharacter({
           round={0.01}
           color="#d9d5bd"
         />
-        <Limb
+        <group
+          ref={leftArm}
           position={[-0.42, 1.03, 0]}
-          length={0.4}
-          radius={0.115}
-          color={color}
           rotation={[0.12, 0, -0.12]}
-        />
-        <Limb
+        >
+          <Limb
+            position={[0, 0, 0]}
+            length={0.4}
+            radius={0.115}
+            color={color}
+          />
+          <Limb
+            position={[-0.03, -0.34, 0.03]}
+            length={0.09}
+            radius={0.09}
+            color={skin}
+          />
+        </group>
+        <group
+          ref={rightArm}
           position={[0.42, 1.03, 0]}
-          length={0.4}
-          radius={0.115}
-          color={color}
           rotation={[-0.07, 0, 0.12]}
-        />
-        <Limb
-          position={[-0.45, 0.69, 0.03]}
-          length={0.09}
-          radius={0.09}
-          color={skin}
-        />
-        <Limb
-          position={[0.45, 0.69, 0.03]}
-          length={0.09}
-          radius={0.09}
-          color={skin}
-        />
+        >
+          <Limb
+            position={[0, 0, 0]}
+            length={0.4}
+            radius={0.115}
+            color={color}
+          />
+          <Limb
+            position={[0.03, -0.34, 0.03]}
+            length={0.09}
+            radius={0.09}
+            color={skin}
+          />
+        </group>
         <Limb position={[0, 1.46, 0]} length={0.08} radius={0.1} color={skin} />
         <group ref={head} position={[0, 1.73, 0]}>
           <mesh scale={[0.275, 0.32, 0.255]} castShadow>
@@ -156,12 +202,14 @@ export default function StylizedCharacter({
             <sphereGeometry args={[1, 10, 8]} />
             <meshStandardMaterial color={skin} />
           </mesh>
-          <Solid
-            position={[0, -0.14, 0.236]}
-            size={[0.09, 0.016, 0.017]}
-            round={0.007}
-            color="#71513f"
-          />
+          <group ref={mouth} position={[0, -0.14, 0.236]}>
+            <Solid
+              position={[0, 0, 0]}
+              size={[0.09, 0.016, 0.017]}
+              round={0.007}
+              color="#71513f"
+            />
+          </group>
         </group>
       </group>
       {children}
