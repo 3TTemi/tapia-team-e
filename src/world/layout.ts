@@ -22,6 +22,33 @@ export const worldFloors: (Footprint & { id: "cafe" | "plaza" | "bank" })[] = [
   { id: "bank", x: 0, z: -3, width: 24, depth: 24 },
 ];
 
+// Ambient staff are scenery, separate from the interviewable witness cast.
+export const ambientActors: {
+  id: string;
+  role: "barista" | "police";
+  position: Position;
+  yaw: number;
+}[] = [
+  {
+    id: "cafe-barista",
+    role: "barista",
+    position: [-7.12, 0, 29.35],
+    yaw: Math.PI / 2,
+  },
+  {
+    id: "bank-officer-west",
+    role: "police",
+    position: [-5.4, 0, 11.7],
+    yaw: 0.25,
+  },
+  {
+    id: "bank-officer-east",
+    role: "police",
+    position: [7.2, 0, 11.6],
+    yaw: -0.45,
+  },
+];
+
 export interface WorldStructure extends Footprint {
   id: string;
   height: number;
@@ -30,6 +57,15 @@ export interface WorldStructure extends Footprint {
 }
 
 export const worldStructures: WorldStructure[] = [
+  ...ambientActors.map((actor) => ({
+    id: `ambient-${actor.id}`,
+    x: actor.position[0],
+    z: actor.position[2],
+    width: 0.75,
+    depth: 0.6,
+    height: 2,
+    surface: "seat" as const,
+  })),
   ...[-10.6, 10.6].map((x) => ({
     id: `lobby-seat-${x}`,
     x,

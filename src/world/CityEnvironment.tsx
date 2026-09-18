@@ -4,6 +4,8 @@ import CafeDetails from "./CafeDetails";
 import BankDetails from "./BankDetails";
 import PlazaDetails from "./PlazaDetails";
 import CinematicAtmosphere from "./CinematicAtmosphere";
+import CityBackdrop from "./CityBackdrop";
+import AmbientLife from "./AmbientLife";
 
 export const environmentPalette: Record<Surface, string> = {
   stone: "#526b79",
@@ -17,7 +19,7 @@ export const environmentPalette: Record<Surface, string> = {
 // Detailed furniture renders from the same footprint locations. These volumes
 // remain in layout.ts for collision but are not also drawn as solid proxy boxes.
 const customGeometry =
-  /^(coffee-|cafe-(table|seat|lounge|atm)|planter-|barrier-|police-car|column-|vault-open-door|lobby-seat-|queue-|street-bench-|bollard-|street-lamp-)/;
+  /^(ambient-|coffee-|cafe-(table|seat|lounge|atm)|planter-|barrier-|police-car|column-|vault-open-door|lobby-seat-|queue-|street-bench-|bollard-|street-lamp-)/;
 
 export default function CityEnvironment() {
   return (
@@ -96,6 +98,8 @@ export default function CityEnvironment() {
       <CafeDetails />
       <PlazaDetails />
       <BankDetails />
+      <CityBackdrop />
+      <AmbientLife />
     </>
   );
 }

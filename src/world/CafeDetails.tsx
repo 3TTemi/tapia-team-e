@@ -1,12 +1,5 @@
-import {
-  art,
-  BrandPanel,
-  CoffeeCup,
-  Cylinder,
-  Plant,
-  Sign,
-  Solid,
-} from "./ArtPrimitives";
+import { art, BrandPanel, Cylinder, Plant, Sign, Solid } from "./ArtPrimitives";
+import { BrandedCoffeeCup as CoffeeCup } from "./AmbientLife";
 import type { Position } from "../game/types";
 import { CAFE_CHAIR_OFFSET, CAFE_CHAIR_XS, CAFE_TABLE_ZS } from "./cafeLayout";
 
