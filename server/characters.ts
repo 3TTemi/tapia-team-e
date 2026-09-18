@@ -13,6 +13,20 @@ export function getCharacterContext(
   suspectId: SuspectId,
   presented: ClueId[],
 ): CharacterContext {
+  if (suspectId === "lucia")
+    return {
+      name: "Lucía",
+      persona:
+        "You are a calm Spanish-speaking witness waiting outside the café. Speak Spanish. You are not a suspect and do not know anyone’s private secrets.",
+      facts: [
+        "You were outside the café and saw a courier collect a sealed bag from the bank.",
+        "The courier walked away calmly; you did not see a face clearly enough to identify anyone.",
+        "You do not know who arranged the pickup or what was inside the bag.",
+        "You suggest checking the bank’s pickup record rather than accusing someone from appearance.",
+      ],
+      fallback:
+        "Vi a un mensajero recoger una bolsa del banco. No vi su cara con claridad. Revisa el registro de recogida.",
+    };
   const shown = new Set(presented);
   const fallback = scriptedReply({
     suspectId,

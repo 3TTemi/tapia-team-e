@@ -247,10 +247,14 @@ export default function StylizedCharacter({
       leftArm.current.rotation.z = speaking ? -0.22 : -0.12;
     }
     if (rightArm.current) {
-      rightArm.current.rotation.x = speaking
-        ? -0.55 + Math.sin(t * 8.5) * 0.42
-        : -0.07;
-      rightArm.current.rotation.z = speaking ? 0.72 : 0.12;
+      rightArm.current.rotation.x =
+        name === "Lucía" && facing
+          ? -1.1
+          : speaking
+            ? -0.55 + Math.sin(t * 8.5) * 0.42
+            : -0.07;
+      rightArm.current.rotation.z =
+        name === "Lucía" && facing ? 0.15 : speaking ? 0.72 : 0.12;
     }
     if (mouth.current)
       mouth.current.scale.y = speaking
@@ -379,6 +383,18 @@ export default function StylizedCharacter({
                 color={trim}
               />
               <Hand side={1} skin={skin} />
+              {name === "Lucía" && (
+                <group position={[0, -0.28, 0.07]} rotation={[0.25, 0, 0]}>
+                  <mesh>
+                    <boxGeometry args={[0.14, 0.24, 0.025]} />
+                    <meshStandardMaterial color="#101c25" roughness={0.35} />
+                  </mesh>
+                  <mesh position={[0, 0, 0.014]}>
+                    <planeGeometry args={[0.11, 0.19]} />
+                    <meshBasicMaterial color={facing ? "#77efda" : "#334b55"} />
+                  </mesh>
+                </group>
+              )}
             </group>
           </>
         )}

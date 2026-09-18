@@ -33,6 +33,7 @@ export interface ChatStatus {
 }
 export interface ChatReply {
   text: string;
+  translation?: string;
   mode: "openai" | "gemini" | "scripted" | "guarded";
   notice?: string;
   history: Message[];

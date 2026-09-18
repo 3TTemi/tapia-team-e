@@ -1,5 +1,6 @@
+import TranslationCaptions from "./TranslationCaptions";
 import { useEffect, useRef, useState } from "react";
-import { clues, suspects } from "../game/case";
+import { clues, suspects, witnessOpeningTranslation } from "../game/case";
 import { evaluateAccusation } from "../game/dialogue";
 import { getChatStatus, requestInterview } from "../game/chat";
 import type {
@@ -183,70 +184,103 @@ export function DialogueHud({
     }
   }
   const collected = clues.filter((c) => game.clues.includes(c.id));
+  const lastWitnessReply = [...game.histories[suspect.id]]
+    .reverse()
+    .find((m) => m.role === "suspect");
   return (
-    <aside className="dialogue-hud" aria-label={`Talking with ${suspect.name}`}>
-      <div className="dialogue-hud-top">
-        <span>
-          <strong>{suspect.name}</strong>
-          <span className="muted">
-            {" "}
-            · {suspect.role.toLowerCase()} · {mode}
-          </span>
-        </span>
-        <button className="dialogue-hud-leave" onClick={onClose}>
-          Walk away
-        </button>
-      </div>
-      {collected.length > 0 && (
-        <div className="chip-row">
-          {collected.map((c) => (
-            <button
-              disabled={busy}
-              className="chip"
-              key={c.id}
-              onClick={() => send(`Explain this: ${c.title}.`, c.id)}
-            >
-              {c.icon} {c.title}
-            </button>
-          ))}
-        </div>
-      )}
-      {notice && <p className="dialogue-hud-notice muted">{notice}</p>}
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-      <form
-        className="question-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send(input);
-        }}
+    <>
+      <aside
+        className="dialogue-hud"
+        aria-label={`Talking with ${suspect.name}`}
       >
-        <input
-          ref={field}
-          aria-label="Your question"
-          placeholder={`Talk to ${suspect.name}…`}
-          maxLength={500}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              onClose();
-            }
+        <div className="dialogue-hud-top">
+          <span>
+            <strong>{suspect.name}</strong>
+            <span className="muted">
+              {" "}
+              · {suspect.role.toLowerCase()} · {mode}
+            </span>
+          </span>
+          <button className="dialogue-hud-leave" onClick={onClose}>
+            Walk away
+          </button>
+        </div>
+        {suspect.id === "lucia" && (
+          <button
+            className="chip"
+            disabled={busy}
+            onClick={() => send("What did you see outside the bank?")}
+          >
+            Ask what she saw · Preguntar qué vio
+          </button>
+        )}
+        {suspect.id !== "lucia" && collected.length > 0 && (
+          <div className="chip-row">
+            {collected.map((c) => (
+              <button
+                disabled={busy}
+                className="chip"
+                key={c.id}
+                onClick={() => send(`Explain this: ${c.title}.`, c.id)}
+              >
+                {c.icon} {c.title}
+              </button>
+            ))}
+          </div>
+        )}
+        {notice && <p className="dialogue-hud-notice muted">{notice}</p>}
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+        <form
+          className="question-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void send(input);
           }}
-        />
-        <button
-          className="primary"
-          disabled={busy || !input.trim()}
-          type="submit"
         >
-          Ask
-        </button>
-      </form>
-    </aside>
+          <input
+            ref={field}
+            aria-label="Your question"
+            placeholder={
+              suspect.id === "lucia"
+                ? "Ask in English or Spanish…"
+                : `Talk to ${suspect.name}…`
+            }
+            maxLength={500}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                onClose();
+              }
+            }}
+          />
+          <button
+            className="primary"
+            disabled={busy || !input.trim()}
+            type="submit"
+          >
+            Ask
+          </button>
+        </form>
+      </aside>
+      {suspect.id === "lucia" && (
+        <TranslationCaptions
+          spanish={lastWitnessReply?.text ?? suspect.opening}
+          english={
+            lastWitnessReply
+              ? (lastWitnessReply.translation ??
+                "Translation unavailable for this saved reply. Ask again.")
+              : witnessOpeningTranslation
+          }
+          busy={busy}
+        />
+      )}
+    </>
   );
 }
 

@@ -1,12 +1,12 @@
 import { currentCharacterNames } from "./names";
 import type { SaveGame } from "./types";
-import { clues, suspects } from "./case";
+import { clues, characters } from "./case";
 
 const KEY = "last-commit-bank-save-v2";
 export const freshGame = (): SaveGame => ({
   version: 1,
   clues: [],
-  histories: { alex: [], jordan: [], sam: [] },
+  histories: { alex: [], jordan: [], sam: [], lucia: [] },
   solved: false,
 });
 export function loadGame(): SaveGame {
@@ -21,7 +21,8 @@ export function loadGame(): SaveGame {
       return freshGame();
     if (!raw.clues.every((id: unknown) => clues.some((c) => c.id === id)))
       return freshGame();
-    for (const s of suspects) {
+    raw.histories.lucia ??= [];
+    for (const s of characters) {
       if (
         !Array.isArray(raw.histories[s.id]) ||
         !raw.histories[s.id].every(

@@ -20,6 +20,7 @@ export const newSession = (): Session => ({
     alex: { presented: [], history: [] },
     jordan: { presented: [], history: [] },
     sam: { presented: [], history: [] },
+    lucia: { presented: [], history: [] },
   },
 });
 export function createStore(directory = path.resolve(".data/interviews")) {
@@ -39,6 +40,7 @@ export function createStore(directory = path.resolve(".data/interviews")) {
           await readFile(path.join(directory, `${id}.json`), "utf8"),
         );
         if (value.version !== 2) return newSession();
+        value.characters.lucia ??= { presented: [], history: [] };
         for (const character of Object.values((value as Session).characters)) {
           for (const message of character.history)
             message.text = currentCharacterNames(message.text);

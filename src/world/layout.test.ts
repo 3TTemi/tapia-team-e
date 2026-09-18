@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { clues, obstacles, suspects } from "../game/case";
+import { clues, obstacles, characters } from "../game/case";
 import { caseStation } from "./caseSubmissionLocation";
 import {
   hasClearSight,
@@ -11,7 +11,7 @@ import {
 
 const blocked = (x: number, z: number) =>
   isWorldBlocked(x, z, obstacles) ||
-  suspects.some(
+  characters.some(
     (suspect) =>
       Math.hypot(x - suspect.position[0], z - suspect.position[2]) < 0.65,
   );
@@ -80,7 +80,7 @@ test("every suspect, clue, and case terminal is reachable from the cafe without 
     }
   }
   assert.ok(visited.has("0,-13"), "The breached vault must also be enterable");
-  for (const target of [...suspects, ...clues, caseStation]) {
+  for (const target of [...characters, ...clues, caseStation]) {
     const [x, , z] = target.position;
     assert.ok(
       queue.some(

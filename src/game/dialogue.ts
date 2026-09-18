@@ -16,6 +16,8 @@ export function scriptedReply({
 }: DialogueRequest): string {
   // Only explicit evidence presentation advances a character's disclosures.
   // Free text and conversation history never count as proof.
+  if (suspectId === "lucia")
+    return "Vi a un mensajero recoger una bolsa del banco. No vi su cara con claridad. Revisa el registro de recogida.";
   const shown = new Set(presentedClues);
   if (presentedClue) shown.add(presentedClue);
 

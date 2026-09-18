@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { clues, suspects } from "../src/game/case";
+import { clues, characters } from "../src/game/case";
 import type { ClueId, SuspectId } from "../src/game/types";
 import { interview } from "./interview";
 import { createStore } from "./store";
@@ -76,7 +76,7 @@ export function createApi(config: () => AIConfig) {
         typeof data !== "object" ||
         typeof data.sessionId !== "string" ||
         !/^[a-f0-9-]{36}$/.test(data.sessionId) ||
-        !suspects.some((s) => s.id === data.suspectId) ||
+        !characters.some((s) => s.id === data.suspectId) ||
         typeof data.message !== "string" ||
         !data.message.trim() ||
         data.message.length > 500 ||
