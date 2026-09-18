@@ -15,7 +15,7 @@ export function getCharacterContext(
 ): CharacterContext {
   if (suspectId === "lucia")
     return {
-      name: "Lucía",
+      name: "Gabby",
       persona:
         "You are a calm Spanish-speaking witness waiting outside the café. Speak Spanish. You are not a suspect and do not know anyone’s private secrets.",
       facts: [

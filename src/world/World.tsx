@@ -148,7 +148,7 @@ function Hacker({
       speaking={speaking}
       facing={Boolean(line)}
     >
-      {line && name !== "Lucía" ? (
+      {line && name !== "Gabby" ? (
         <group position={[0, 2.15, 0]}>
           <SpeechBubble
             name={name}

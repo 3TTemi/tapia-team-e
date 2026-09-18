@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { Position } from "../game/types";
 import { Solid } from "./ArtPrimitives";
+import { PersonaClothes, PersonaHead } from "./CharacterPersona";
 
 function Limb({
   position,
@@ -144,14 +145,6 @@ function Workwear({ name, trim }: { name: string; trim: string }) {
           color="#a8a792"
         />
       )}
-      {contractor && (
-        <Solid
-          position={[-0.15, 0.96, 0.21]}
-          size={[0.12, 0.14, 0.021]}
-          round={0.008}
-          color="#e0d9be"
-        />
-      )}
     </>
   );
 }
@@ -200,9 +193,23 @@ export default function StylizedCharacter({
         : name === "Sam"
           ? "#655f50"
           : "#b8b29d";
-  const trousers = name === "Sam" ? "#424b49" : "#293d48";
+  const trousers =
+    name === "Alex"
+      ? "#344f60"
+      : name === "Gabby"
+        ? "#343c55"
+        : name === "Sam"
+          ? "#424b49"
+          : "#293d48";
   const hair =
-    name === "Sam" ? "#605247" : name === "Alex" ? "#302f2b" : "#383b39";
+    name === "Gabby"
+      ? "#352820"
+      : name === "Sam"
+        ? "#605247"
+        : name === "Alex"
+          ? "#302f2b"
+          : "#383b39";
+  const gloves = name === "Alex" ? "#c8ad65" : skin;
   useFrame(({ camera, clock }) => {
     const time = animationTime?.current ?? clock.elapsedTime;
     const t = time + position[0];
@@ -248,13 +255,13 @@ export default function StylizedCharacter({
     }
     if (rightArm.current) {
       rightArm.current.rotation.x =
-        name === "Lucía" && facing
+        name === "Gabby" && facing
           ? -1.1
           : speaking
             ? -0.55 + Math.sin(t * 8.5) * 0.42
             : -0.07;
       rightArm.current.rotation.z =
-        name === "Lucía" && facing ? 0.15 : speaking ? 0.72 : 0.12;
+        name === "Gabby" && facing ? 0.15 : speaking ? 0.72 : 0.12;
     }
     if (mouth.current)
       mouth.current.scale.y = speaking
@@ -300,7 +307,13 @@ export default function StylizedCharacter({
               position={[x, -0.68, pose === "seated" ? 0.56 : 0.1]}
               size={[0.235, 0.15, 0.36]}
               round={0.055}
-              color="#303b3f"
+              color={
+                name === "Alex" || name === "Sam"
+                  ? "#584637"
+                  : name === "Gabby"
+                    ? "#e4d6be"
+                    : "#303b3f"
+              }
               rough={0.75}
             />
             <Solid
@@ -313,12 +326,17 @@ export default function StylizedCharacter({
         ))}
         <Solid
           position={[0, 1.08, 0]}
-          size={[0.63, 0.68, 0.38]}
+          size={[
+            name === "Jordan" ? 0.68 : name === "Gabby" ? 0.57 : 0.63,
+            0.68,
+            0.38,
+          ]}
           round={0.12}
           color={shirt}
           rough={0.92}
         />
-        <Workwear name={name} trim={trim} />
+        {name !== "Gabby" && <Workwear name={name} trim={trim} />}
+        <PersonaClothes name={name} />
         {pose === "seated" ? (
           [-1, 1].map((side) => (
             <group key={side}>
@@ -363,7 +381,7 @@ export default function StylizedCharacter({
                 radius={0.081}
                 color={trim}
               />
-              <Hand side={-1} skin={skin} />
+              <Hand side={-1} skin={gloves} />
             </group>
             <group
               ref={rightArm}
@@ -382,8 +400,8 @@ export default function StylizedCharacter({
                 radius={0.081}
                 color={trim}
               />
-              <Hand side={1} skin={skin} />
-              {name === "Lucía" && (
+              <Hand side={1} skin={gloves} />
+              {name === "Gabby" && (
                 <group position={[0, -0.28, 0.07]} rotation={[0.25, 0, 0]}>
                   <mesh>
                     <boxGeometry args={[0.14, 0.24, 0.025]} />
@@ -400,7 +418,14 @@ export default function StylizedCharacter({
         )}
         <Limb position={[0, 1.46, 0]} length={0.08} radius={0.1} color={skin} />
         <group ref={head} position={[0, 1.73, 0]}>
-          <mesh scale={[0.235, 0.295, 0.225]} castShadow>
+          <mesh
+            scale={[
+              name === "Jordan" ? 0.245 : name === "Gabby" ? 0.22 : 0.235,
+              0.295,
+              0.225,
+            ]}
+            castShadow
+          >
             <sphereGeometry args={[1, 20, 16]} />
             <meshStandardMaterial color={skin} roughness={0.75} />
           </mesh>
@@ -434,6 +459,7 @@ export default function StylizedCharacter({
               <meshStandardMaterial color={hair} roughness={0.95} />
             </mesh>
           )}
+          <PersonaHead name={name} hair={hair} />
           {[-0.082, 0.082].map((x) => (
             <group key={x}>
               <mesh position={[x, 0.025, 0.212]} scale={[0.022, 0.026, 0.012]}>

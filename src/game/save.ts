@@ -42,8 +42,10 @@ export function loadGame(): SaveGame {
         return freshGame();
     }
     for (const history of Object.values((raw as SaveGame).histories)) {
-      for (const message of history)
+      for (const message of history) {
         message.text = currentCharacterNames(message.text);
+        if (message.translation) message.translation = currentCharacterNames(message.translation);
+      }
     }
     return raw as SaveGame;
   } catch {
