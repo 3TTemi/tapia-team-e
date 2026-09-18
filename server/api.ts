@@ -1,13 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { clues, characters } from "../src/game/case";
+import { clues, characters, clueIdsOnCollect } from "../src/game/case";
 import type { ClueId, SuspectId } from "../src/game/types";
 import { interview, interviewStream } from "./interview";
 import { sendSSE, writeSSE } from "./sse";
 import { createStore } from "./store";
 import type { AIConfig } from "./gemini";
 
-export function createApi(config: () => AIConfig) {
-  const store = createStore();
+const evidenceIds = new Set(clues.flatMap(clueIdsOnCollect));
+
+export function createApi(config: () => AIConfig, store = createStore()) {
   const send = (res: ServerResponse, status: number, body: unknown) => {
     res.writeHead(status, {
       "Content-Type": "application/json",
@@ -82,19 +83,23 @@ export function createApi(config: () => AIConfig) {
         !data.message.trim() ||
         data.message.length > 500 ||
         !Array.isArray(data.collectedClues) ||
-        data.collectedClues.length > 5 ||
+        data.collectedClues.length > evidenceIds.size ||
         !data.collectedClues.every((c: unknown) =>
-          clues.some((known) => known.id === c),
+          evidenceIds.has(c as ClueId),
         ) ||
         (data.presentedClue !== undefined &&
-          !clues.some((c) => c.id === data.presentedClue))
+          !evidenceIds.has(data.presentedClue))
       ) {
         send(res, 400, { error: "Invalid interview request." });
         return;
       }
       if (
         data.presentedClue &&
-        !data.collectedClues.includes(data.presentedClue)
+        !(
+          clues.find((clue) => clue.id === data.presentedClue)?.grants ?? [
+            data.presentedClue,
+          ]
+        ).every((evidence) => data.collectedClues.includes(evidence))
       ) {
         send(res, 400, {
           error: "Collect this evidence before presenting it.",

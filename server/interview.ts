@@ -1,5 +1,6 @@
 import { emitScriptedStream, streamReplyText } from "./streaming";
 import { createGenerator } from "./providers";
+import { clues, clueIdsOnCollect } from "../src/game/case";
 import { scriptedReply } from "../src/game/dialogue";
 import { getCharacterContext } from "./characters";
 import {
@@ -11,6 +12,12 @@ import {
 } from "./gemini";
 import type { CharacterMemory } from "./store";
 import type { ClueId, SuspectId } from "../src/game/types";
+
+function presentedEvidence(id?: ClueId): ClueId[] {
+  if (!id) return [];
+  const clue = clues.find((entry) => entry.id === id);
+  return clue ? clueIdsOnCollect(clue) : [id];
+}
 
 export interface InterviewInput {
   suspectId: SuspectId;
@@ -37,7 +44,7 @@ export async function interview(
   const presented = [
     ...new Set([
       ...memory.presented,
-      ...(input.presentedClue ? [input.presentedClue] : []),
+      ...presentedEvidence(input.presentedClue),
     ]),
   ];
   const context = getCharacterContext(input.suspectId, presented);
@@ -241,7 +248,7 @@ export async function interviewStream(
   const presented = [
     ...new Set([
       ...memory.presented,
-      ...(input.presentedClue ? [input.presentedClue] : []),
+      ...presentedEvidence(input.presentedClue),
     ]),
   ];
   const context = buildContext(input, memory, presented);

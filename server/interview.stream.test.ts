@@ -70,3 +70,16 @@ test("scripted stream typewrites the authored fallback", async () => {
   assert.equal(result.mode, "scripted");
   assert.equal(memory.history.at(-1)?.role, "suspect");
 });
+
+test("streamed pickup file unlocks both bundled records for Sam", async () => {
+  const memory = newSession().characters.sam;
+  const result = await interviewStream(
+    { suspectId: "sam", message: "Explain this file.", presentedClue: "heat" },
+    memory,
+    { ...config, scripted: true },
+    { start: () => {}, token: () => {}, replace: () => {} },
+    { scriptedStream: async (text) => text },
+  );
+  assert.deepEqual(memory.presented, ["badge", "heat"]);
+  assert.match(result.text, /I planned the robbery/);
+});
