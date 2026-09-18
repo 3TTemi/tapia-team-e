@@ -12,6 +12,10 @@ import StylizedCharacter from "./StylizedCharacter";
 import OpeningCinematic from "./OpeningCinematic";
 import { OPENING_HANDOFF, type OpeningShot } from "./openingTimeline";
 import type { OpeningAudio } from "./openingAudio";
+import type { CaseVerdict } from "../game/submission";
+import CaseStation from "./CaseStation";
+import { caseStation } from "./caseSubmissionLocation";
+import VerdictCinematic from "./VerdictCinematic";
 
 function Block({
   position,
@@ -197,6 +201,7 @@ function Monitor({
 function Room({
   collected,
   target,
+  solved,
   talkingTo,
   speaking,
   bubbleText,
@@ -204,6 +209,7 @@ function Room({
 }: {
   collected: ClueId[];
   target: TargetId | null;
+  solved: boolean;
   talkingTo: SuspectId | null;
   speaking: boolean;
   bubbleText: string | null;
@@ -212,6 +218,7 @@ function Room({
   return (
     <>
       <CityEnvironment />
+      <CaseStation focused={target === "submission"} solved={solved} />
       {obstacles.map((desk, i) => (
         <Desk key={i} {...desk} />
       ))}
@@ -403,7 +410,7 @@ function Player({
     camera.getWorldDirection(direction.current);
     let next: TargetId | null = null;
     let closest = 3.1;
-    for (const object of [...suspects, ...clues]) {
+    for (const object of [...suspects, ...clues, caseStation]) {
       const p = object.position;
       deltaVector.current
         .set(p[0], "role" in object ? 1.5 : p[1], p[2])
@@ -443,6 +450,9 @@ export default function World({
   onIntroShot,
   onIntroComplete,
   enterAtBank,
+  solved,
+  verdict,
+  onVerdictComplete,
 }: {
   active: boolean;
   keyboardMode: boolean;
@@ -460,6 +470,9 @@ export default function World({
   onIntroShot: (shot: OpeningShot) => void;
   onIntroComplete: () => void;
   enterAtBank: boolean;
+  solved: boolean;
+  verdict: CaseVerdict | null;
+  onVerdictComplete: () => void;
 }) {
   return (
     <Canvas
@@ -486,6 +499,7 @@ export default function World({
           <Room
             collected={collected}
             target={target}
+            solved={solved}
             talkingTo={talkingTo}
             speaking={speaking}
             bubbleText={bubbleText}
@@ -504,6 +518,12 @@ export default function World({
               audio={introAudio}
               onShot={onIntroShot}
               onComplete={onIntroComplete}
+            />
+          )}
+          {verdict && (
+            <VerdictCinematic
+              verdict={verdict}
+              onComplete={onVerdictComplete}
             />
           )}
         </WorldMaterials>

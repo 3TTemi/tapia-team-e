@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { freshGame } from "./save";
+import { submitCase } from "./submission";
+import type { ClueId, SuspectId } from "./types";
+
+test("submission requires both collected proof records before issuing any verdict", () => {
+  const ids: ClueId[] = ["dock", "log", "photo", "badge", "heat"];
+  for (let mask = 0; mask < 32; mask++) {
+    const game = {
+      ...freshGame(),
+      clues: ids.filter((_, i) => mask & (1 << i)),
+    };
+    for (const suspect of ["alex", "jordan", "sam"] as SuspectId[]) {
+      const result = submitCase(game, suspect);
+      const supported =
+        game.clues.includes("badge") && game.clues.includes("heat");
+      assert.equal(
+        result.decision.status,
+        supported
+          ? suspect === "sam"
+            ? "solved"
+            : "wrong-suspect"
+          : "insufficient-evidence",
+      );
+      assert.equal(result.game.solved, supported && suspect === "sam");
+      if (!result.game.solved) assert.equal(result.game, game);
+    }
+  }
+});
+
+test("wrong choice and retry preserve every clue and interview, then close the case", () => {
+  const game = freshGame();
+  game.clues = ["badge", "heat", "photo"];
+  game.histories.sam = [{ role: "suspect", text: "Recorded statement." }];
+  const wrong = submitCase(game, "alex");
+  assert.equal(wrong.decision.status, "wrong-suspect");
+  assert.deepEqual(wrong.game, game);
+  const correct = submitCase(wrong.game, "sam");
+  assert.equal(correct.decision.status, "solved");
+  assert.equal(correct.game.solved, true);
+  assert.equal(correct.game.clues, game.clues);
+  assert.equal(correct.game.histories, game.histories);
+  assert.equal(game.solved, false, "the existing save must not be mutated");
+  assert.equal(freshGame().solved, false);
+  assert.deepEqual(freshGame().clues, []);
+});
+
+test("a confession or text naming proof does not replace collected records", () => {
+  const game = freshGame();
+  game.histories.sam = [{ role: "suspect", text: "I planned it. badge heat" }];
+  const result = submitCase(game, "sam");
+  assert.deepEqual(result.decision, {
+    status: "insufficient-evidence",
+    missing: ["badge", "heat"],
+  });
+  assert.equal(result.game, game);
+});

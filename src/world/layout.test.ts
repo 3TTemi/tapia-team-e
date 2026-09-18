@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { clues, obstacles, suspects } from "../game/case";
+import { caseStation } from "./caseSubmissionLocation";
 import {
   hasClearSight,
   isWorldBlocked,
@@ -59,7 +60,7 @@ test("solid facades and glass stop the player while the open doorways allow entr
   );
 });
 
-test("every existing suspect and clue is reachable from the cafe without crossing furniture or walls", () => {
+test("every suspect, clue, and case terminal is reachable from the cafe without crossing furniture or walls", () => {
   const queue: [number, number][] = [[PLAYER_SPAWN[0], PLAYER_SPAWN[2]]];
   const visited = new Set([queue[0].join(",")]);
   for (let i = 0; i < queue.length; i++) {
@@ -79,7 +80,7 @@ test("every existing suspect and clue is reachable from the cafe without crossin
     }
   }
   assert.ok(visited.has("0,-13"), "The breached vault must also be enterable");
-  for (const target of [...suspects, ...clues]) {
+  for (const target of [...suspects, ...clues, caseStation]) {
     const [x, , z] = target.position;
     assert.ok(
       queue.some(
@@ -89,4 +90,12 @@ test("every existing suspect and clue is reachable from the cafe without crossin
       `Cannot approach ${target.id}`,
     );
   }
+});
+
+test("case terminal has a solid footprint and a clear interaction point inside the exit", () => {
+  const [x, , z] = caseStation.position;
+  assert.equal(blocked(x, z), true);
+  assert.equal(blocked(x, z + 1.5), false);
+  assert.equal(hasClearSight(x, z + 1.5, x, z), true);
+  assert.equal(hasClearSight(x, z + 4, x, z), true);
 });

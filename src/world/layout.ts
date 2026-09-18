@@ -1,5 +1,6 @@
 import type { Position } from "../game/types";
 import { CAFE_SEAT_ROWS } from "./cafeLayout";
+import { caseStation } from "./caseSubmissionLocation";
 
 // World coordinates stay separate from the art so another renderer can reuse the
 // same entrances, furniture footprints, and investigation positions.
@@ -394,6 +395,7 @@ export function isWorldBlocked(
 ) {
   return (
     !walkableAreas.some((area) => within(x, z, area)) ||
+    within(x, z, caseStation.footprint, PLAYER_RADIUS) ||
     worldStructures.some((box) => within(x, z, box, PLAYER_RADIUS)) ||
     furniture.some((box) => within(x, z, box, PLAYER_RADIUS))
   );

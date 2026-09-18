@@ -4,6 +4,8 @@ import World from "./world/World";
 import { clues, suspects } from "./game/case";
 import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
+import { submitCase, type CaseVerdict } from "./game/submission";
+import CaseSubmission, { CaseRetry, VerdictOverlay } from "./ui/CaseSubmission";
 import InvestigationBoard, {
   loadBoardLinks,
   persistBoardLinks,
@@ -12,7 +14,6 @@ import OpeningOverlay from "./ui/OpeningOverlay";
 import { createOpeningAudio, type OpeningAudio } from "./world/openingAudio";
 import type { OpeningShot } from "./world/openingTimeline";
 import {
-  Accusation,
   CaseBrief,
   CluePanel,
   DialogueHud,
@@ -20,7 +21,14 @@ import {
   Notebook,
 } from "./ui/Panels";
 
-type Panel = TargetId | "notebook" | "board" | "accusation" | "ending" | null;
+type Panel =
+  | TargetId
+  | "notebook"
+  | "board"
+  | "accusation"
+  | "ending"
+  | "case-result"
+  | null;
 const INTRO_SEEN_KEY = "last-commit-opening-seen-v1";
 
 function hasSeenOpening() {
@@ -46,6 +54,8 @@ export default function App() {
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [target, setTarget] = useState<TargetId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  const [verdict, setVerdict] = useState<CaseVerdict | null>(null);
+  const [failedSuspect, setFailedSuspect] = useState<SuspectId | null>(null);
   const [talkingTo, setTalkingTo] = useState<SuspectId | null>(null);
   const [thinking, setThinking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -169,6 +179,30 @@ export default function App() {
           : { ...prev, clues: [...prev.clues, clue.id] },
       );
   }, []);
+  const confirmCase = (suspectId: SuspectId) => {
+    const result = submitCase(game, suspectId);
+    if (result.decision.status === "insufficient-evidence")
+      return result.decision;
+    document.exitPointerLock?.();
+    setKeyboardMode(true);
+    setTalkingTo(null);
+    setThinking(false);
+    setSpeaking(false);
+    setTarget(null);
+    setPanel(null);
+    setFailedSuspect(
+      result.decision.status === "wrong-suspect" ? suspectId : null,
+    );
+    if (result.decision.status === "solved")
+      setGame((prev) => ({ ...prev, solved: true }));
+    setVerdict(result.decision);
+    return result.decision;
+  };
+  const completeVerdict = useCallback(() => {
+    if (!verdict) return;
+    setPanel(verdict.status === "solved" ? "ending" : "case-result");
+    setVerdict(null);
+  }, [verdict]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (
@@ -177,7 +211,7 @@ export default function App() {
         e.target instanceof HTMLTextAreaElement
       )
         return;
-      if (!started || panel || e.repeat) return;
+      if (!started || panel || verdict || e.repeat) return;
       if (cinematic) {
         if (e.code === "Escape") {
           e.preventDefault();
@@ -214,6 +248,7 @@ export default function App() {
   }, [
     started,
     panel,
+    verdict,
     talkingTo,
     cinematic,
     locked,
@@ -247,18 +282,23 @@ export default function App() {
     : null;
   const clue = clues.find((c) => c.id === panel);
   const targetName =
-    suspects.find((s) => s.id === target)?.name ??
-    clues.find((c) => c.id === target)?.title;
+    target === "submission"
+      ? game.solved
+        ? "Final case report"
+        : "Submit case"
+      : (suspects.find((s) => s.id === target)?.name ??
+        clues.find((c) => c.id === target)?.title);
   return (
     <main className="game-shell">
       <div
         className={`world ${!started ? "world-intro" : ""}`}
         onClick={() => {
-          if (started && !cinematic && !panel && keyboardMode) captureMouse();
+          if (started && !cinematic && !verdict && !panel && keyboardMode)
+            captureMouse();
         }}
       >
         <World
-          active={started && !panel && !talkingTo && !cinematic}
+          active={started && !panel && !talkingTo && !cinematic && !verdict}
           keyboardMode={keyboardMode}
           collected={game.clues}
           target={target}
@@ -274,10 +314,13 @@ export default function App() {
           onIntroShot={setIntroShot}
           onIntroComplete={completeIntro}
           enterAtBank={enterAtBank}
+          solved={game.solved}
+          verdict={verdict}
+          onVerdictComplete={completeVerdict}
         />
       </div>
       <div className="vignette" />
-      {!cinematic && (
+      {!cinematic && !verdict && (
         <header className="top-bar">
           <a className="wordmark" href="/" aria-label="Last Commit home">
             <span className="logo-mark">LC</span> LAST COMMIT
@@ -311,7 +354,8 @@ export default function App() {
       {cinematic && (
         <OpeningOverlay shot={introShot} onSkip={() => setSkipIntro(true)} />
       )}
-      {started && !cinematic && (
+      {verdict && <VerdictOverlay verdict={verdict} />}
+      {started && !cinematic && !verdict && (
         <>
           <aside className="objective">
             <div className="eyebrow">
@@ -339,15 +383,19 @@ export default function App() {
                   <>
                     <kbd>E</kbd>
                     <span>
-                      {suspects.some((s) => s.id === target)
-                        ? "Talk to"
-                        : "Inspect"}{" "}
+                      {target === "submission"
+                        ? "Use"
+                        : suspects.some((s) => s.id === target)
+                          ? "Talk to"
+                          : "Inspect"}{" "}
                       <strong>{targetName}</strong>
                     </span>
                   </>
                 ) : (
                   <span className="explore-hint">
-                    Enter the bank. Follow the gold markers.
+                    {game.clues.includes("badge") && game.clues.includes("heat")
+                      ? "Ready to make your case? Use the terminal by the bank exit."
+                      : "Enter the bank. Follow the gold markers."}
                   </span>
                 )}
               </div>
@@ -489,6 +537,8 @@ export default function App() {
                   setEnterAtBank(false);
                   setKeyboardMode(false);
                   setCinematic(false);
+                  setVerdict(null);
+                  setFailedSuspect(null);
                   try {
                     localStorage.removeItem(INTRO_SEEN_KEY);
                   } catch {
@@ -500,14 +550,21 @@ export default function App() {
               }}
             />
           )}
-          {panel === "accusation" && (
-            <Accusation
-              game={game}
+          {(panel === "accusation" || panel === "submission") &&
+            (game.solved ? (
+              <Ending onClose={resume} />
+            ) : (
+              <CaseSubmission
+                game={game}
+                onClose={resume}
+                onConfirm={confirmCase}
+              />
+            ))}
+          {panel === "case-result" && failedSuspect && (
+            <CaseRetry
+              suspectId={failedSuspect}
+              onRetry={() => setPanel("submission")}
               onClose={resume}
-              onSolve={() => {
-                setGame((prev) => ({ ...prev, solved: true }));
-                setPanel("ending");
-              }}
             />
           )}
           {panel === "ending" && <Ending onClose={resume} />}
