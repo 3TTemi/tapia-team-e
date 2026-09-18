@@ -51,6 +51,78 @@ export function createApi(config: () => AIConfig, store = createStore()) {
       });
       return;
     }
+    if (route === "/api/tts" && req.method === "POST") {
+      try {
+        let raw = "";
+        for await (const chunk of req) {
+          raw += chunk.toString();
+          if (Buffer.byteLength(raw) > 12000) {
+            send(res, 413, { error: "Speech text is too large." });
+            return;
+          }
+        }
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          send(res, 400, { error: "Invalid speech request." });
+          return;
+        }
+        if (
+          !data ||
+          typeof data.text !== "string" ||
+          !data.text.trim() ||
+          data.text.length > 2000 ||
+          typeof data.suspectId !== "string" ||
+          !characters.some((character) => character.id === data.suspectId)
+        ) {
+          send(res, 400, { error: "Invalid speech request." });
+          return;
+        }
+        const c = config();
+        const voiceId = c.elevenLabsVoiceIds?.[data.suspectId];
+        if (!c.elevenLabsApiKey) {
+          send(res, 503, { error: "ElevenLabs is not configured." });
+          return;
+        }
+        if (!voiceId || voiceId === "voice_id_here") {
+          send(res, 503, {
+            error: `No ElevenLabs voice ID configured for ${data.suspectId}. Add it to .env and restart.`,
+          });
+          return;
+        }
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+          {
+            method: "POST",
+            headers: {
+              Accept: "audio/mpeg",
+              "Content-Type": "application/json",
+              "xi-api-key": c.elevenLabsApiKey,
+            },
+            body: JSON.stringify({
+              text: data.text,
+              model_id: c.elevenLabsModel || "eleven_multilingual_v2",
+            }),
+            signal: AbortSignal.timeout(30000),
+          },
+        );
+        if (!response.ok) {
+          console.error("ElevenLabs request failed:", response.status);
+          send(res, 502, {
+            error: "ElevenLabs could not synthesize the reply.",
+          });
+          return;
+        }
+        const audio = Buffer.from(await response.arrayBuffer()).toString(
+          "base64",
+        );
+        send(res, 200, { url: `data:audio/mpeg;base64,${audio}` });
+      } catch {
+        send(res, 502, { error: "Voice service unavailable." });
+      }
+      return;
+    }
     if (route !== "/api/interview" || req.method !== "POST") {
       send(res, 404, { error: "Unknown endpoint." });
       return;

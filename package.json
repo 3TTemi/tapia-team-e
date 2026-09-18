@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "dev:full": "npm run dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --import tsx --test src/game/*.test.ts src/world/*.test.ts server/*.test.ts",
@@ -28,5 +29,9 @@
     "tsx": "^4.20.0",
     "typescript": "~5.9.2",
     "vite": "^6.3.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
   }
 }

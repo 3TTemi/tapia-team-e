@@ -13,6 +13,26 @@ export default defineConfig(({ mode }) => {
     openaiApiKey: process.env.OPENAI_API_KEY || env.OPENAI_API_KEY || "",
     openaiModel: process.env.OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4.1-mini",
     scripted: (process.env.DIALOGUE_MODE || env.DIALOGUE_MODE) === "scripted",
+    elevenLabsApiKey:
+      process.env.ELEVENLABS_API_KEY || env.ELEVENLABS_API_KEY || "",
+    elevenLabsModel:
+      process.env.ELEVENLABS_MODEL_ID ||
+      env.ELEVENLABS_MODEL_ID ||
+      "eleven_multilingual_v2",
+    elevenLabsVoiceIds: {
+      alex:
+        process.env.ELEVENLABS_ALEX_VOICE_ID ||
+        env.ELEVENLABS_ALEX_VOICE_ID ||
+        "",
+      jordan:
+        process.env.ELEVENLABS_JORDAN_VOICE_ID ||
+        env.ELEVENLABS_JORDAN_VOICE_ID ||
+        "",
+      sam:
+        process.env.ELEVENLABS_SAM_VOICE_ID ||
+        env.ELEVENLABS_SAM_VOICE_ID ||
+        "",
+    },
   }));
   return {
     plugins: [

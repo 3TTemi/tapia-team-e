@@ -69,6 +69,7 @@ export default function App() {
   const [speaking, setSpeaking] = useState(false);
   const [streamReply, setStreamReply] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
+  const [voiceSpeaking, setVoiceSpeaking] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
   const [error, setError] = useState("");
   const [introSeen, setIntroSeen] = useState(hasSeenOpening);
@@ -215,8 +216,6 @@ export default function App() {
   }, []);
   const confirmCase = (suspectId: SuspectId) => {
     const result = submitCase(game, suspectId);
-    if (result.decision.status === "insufficient-evidence")
-      return result.decision;
     document.exitPointerLock?.();
     setKeyboardMode(true);
     setTalkingTo(null);
@@ -307,10 +306,10 @@ export default function App() {
       return;
     }
     setSpeaking(true);
-    if (thinking || streaming) return;
+    if (thinking || streaming || voiceSpeaking) return;
     const timer = window.setTimeout(() => setSpeaking(false), 4200);
     return () => window.clearTimeout(timer);
-  }, [talkingTo, thinking, streaming, lastReply]);
+  }, [talkingTo, thinking, streaming, voiceSpeaking, lastReply]);
   const bubbleText = talkingSuspect
     ? (streamReply ?? lastReply ?? talkingSuspect.opening)
     : null;
@@ -420,8 +419,7 @@ export default function App() {
             </h3>
             <p>
               {collectedWorldClueCount(game.clues)} / {clues.length} clues
-              collected{" "}
-              <span>·</span>{" "}
+              collected <span>·</span>{" "}
               {suspects.filter((s) => game.histories[s.id].length > 0).length} /
               3 suspects interviewed
             </p>
@@ -532,6 +530,7 @@ export default function App() {
               onThinking={setThinking}
               onStreamText={setStreamReply}
               onStreaming={setStreaming}
+              onVoiceSpeaking={setVoiceSpeaking}
             />
           )}
         </>

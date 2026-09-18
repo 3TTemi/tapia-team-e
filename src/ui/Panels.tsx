@@ -8,6 +8,7 @@ import {
   requestInterview,
   requestInterviewStream,
 } from "../game/chat";
+import { useCharacterVoice } from "../game/useCharacterVoice";
 import type {
   Clue,
   ClueId,
@@ -124,6 +125,7 @@ export function DialogueHud({
   onThinking,
   onStreamText,
   onStreaming,
+  onVoiceSpeaking,
 }: {
   suspect: Suspect;
   game: SaveGame;
@@ -133,6 +135,7 @@ export function DialogueHud({
   onThinking: (thinking: boolean) => void;
   onStreamText: (text: string | null) => void;
   onStreaming: (streaming: boolean) => void;
+  onVoiceSpeaking?: (speaking: boolean) => void;
 }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -140,6 +143,7 @@ export function DialogueHud({
   const [mode, setMode] = useState("Connecting…");
   const [notice, setNotice] = useState("");
   const field = useRef<HTMLInputElement>(null);
+  const voice = useCharacterVoice(suspect.id, onVoiceSpeaking);
   useEffect(() => {
     let active = true;
     getChatStatus()
@@ -165,6 +169,7 @@ export function DialogueHud({
   }, [suspect.id]);
   async function send(message: string, presentedClue?: ClueId) {
     if (busy || !message.trim()) return;
+    voice.stop();
     setBusy(true);
     onThinking(true);
     onStreaming(true);
@@ -209,6 +214,7 @@ export function DialogueHud({
       );
       setNotice(reply.notice ?? "");
       setInput("");
+      if (suspect.id !== "lucia") void voice.speak(reply.text);
     } catch (err) {
       setError(
         err instanceof Error
@@ -247,6 +253,30 @@ export function DialogueHud({
         className="dialogue-hud"
         aria-label={`Talking with ${suspect.name}`}
       >
+        {suspect.id !== "lucia" && (
+          <div className="voice-controls" aria-live="polite">
+            <button
+              type="button"
+              onClick={voice.toggle}
+              aria-pressed={voice.enabled}
+            >
+              {voice.enabled ? "Mute voice" : "Enable voice"}
+            </button>
+            <button
+              type="button"
+              disabled={busy || voice.loading}
+              onClick={() =>
+                void voice.replay(lastWitnessReply?.text ?? suspect.opening)
+              }
+            >
+              {voice.loading ? "Preparing voice…" : "Play / replay voice"}
+            </button>
+            <small>
+              {voice.error ||
+                (voice.playing ? "Speaking · ElevenLabs" : "ElevenLabs voice")}
+            </small>
+          </div>
+        )}
         <div className="dialogue-hud-top">
           <span>
             <strong>{suspect.name}</strong>

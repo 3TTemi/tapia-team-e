@@ -4,7 +4,7 @@ import { freshGame } from "./save";
 import { submitCase } from "./submission";
 import type { ClueId, SuspectId } from "./types";
 
-test("submission requires both collected proof records before issuing any verdict", () => {
+test("demo submission permits a verdict with any number of collected records", () => {
   const ids: ClueId[] = ["dock", "log", "photo", "badge", "heat"];
   for (let mask = 0; mask < 32; mask++) {
     const game = {
@@ -13,17 +13,11 @@ test("submission requires both collected proof records before issuing any verdic
     };
     for (const suspect of ["alex", "jordan", "sam"] as SuspectId[]) {
       const result = submitCase(game, suspect);
-      const supported =
-        game.clues.includes("badge") && game.clues.includes("heat");
       assert.equal(
         result.decision.status,
-        supported
-          ? suspect === "sam"
-            ? "solved"
-            : "wrong-suspect"
-          : "insufficient-evidence",
+        suspect === "sam" ? "solved" : "wrong-suspect",
       );
-      assert.equal(result.game.solved, supported && suspect === "sam");
+      assert.equal(result.game.solved, suspect === "sam");
       if (!result.game.solved) assert.equal(result.game, game);
     }
   }
@@ -46,13 +40,12 @@ test("wrong choice and retry preserve every clue and interview, then close the c
   assert.deepEqual(freshGame().clues, []);
 });
 
-test("a confession or text naming proof does not replace collected records", () => {
+test("demo can finish without evidence or interviews", () => {
   const game = freshGame();
-  game.histories.sam = [{ role: "suspect", text: "I planned it. badge heat" }];
   const result = submitCase(game, "sam");
   assert.deepEqual(result.decision, {
-    status: "insufficient-evidence",
-    missing: ["badge", "heat"],
+    status: "solved",
+    suspectId: "sam",
   });
-  assert.equal(result.game, game);
+  assert.equal(result.game.solved, true);
 });
