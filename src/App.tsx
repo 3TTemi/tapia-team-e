@@ -1,3 +1,4 @@
+import type { CharacterVisualAction } from "./game/actions";
 import { resetInterviews } from "./game/chat";
 import { computeDemoStep, nextTalkTarget } from "./game/demo";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -71,6 +72,9 @@ export default function App() {
   const [streaming, setStreaming] = useState(false);
   const [voiceSpeaking, setVoiceSpeaking] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [characterActions, setCharacterActions] = useState<
+    Partial<Record<SuspectId, CharacterVisualAction>>
+  >({});
   const [error, setError] = useState("");
   const [introSeen, setIntroSeen] = useState(hasSeenOpening);
   const [cinematic, setCinematic] = useState(false);
@@ -124,12 +128,19 @@ export default function App() {
       setError("");
     }
   }, []);
+  const setCharacterAction = useCallback(
+    (id: SuspectId, action: CharacterVisualAction) => {
+      setCharacterActions((prev) => ({ ...prev, [id]: action }));
+    },
+    [],
+  );
   const resume = useCallback(() => {
     setStarted(true);
     setPanel(null);
     setTalkingTo(null);
     setThinking(false);
     setSpeaking(false);
+    setCharacterActions({});
     if (!keyboardMode) captureMouse();
   }, [keyboardMode, captureMouse]);
   const completeIntro = useCallback(() => {
@@ -351,6 +362,7 @@ export default function App() {
           thinking={thinking}
           streaming={streaming}
           talkGuide={talkGuide}
+          characterActions={characterActions}
           onTarget={setTarget}
           onLock={onLock}
           cinematic={cinematic}
@@ -531,6 +543,7 @@ export default function App() {
               onStreamText={setStreamReply}
               onStreaming={setStreaming}
               onVoiceSpeaking={setVoiceSpeaking}
+              onCharacterAction={setCharacterAction}
             />
           )}
         </>

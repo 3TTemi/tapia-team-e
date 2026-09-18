@@ -1,6 +1,10 @@
 import { useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
+import {
+  isActionActive,
+  type CharacterVisualAction,
+} from "../game/actions";
 import type { Position } from "../game/types";
 import { Solid } from "./ArtPrimitives";
 import { PersonaClothes, PersonaHead } from "./CharacterPersona";
@@ -158,6 +162,7 @@ export default function StylizedCharacter({
   animationTime,
   speaking = false,
   facing = false,
+  visualAction = null,
 }: {
   position: Position;
   color: string;
@@ -167,6 +172,7 @@ export default function StylizedCharacter({
   animationTime?: RefObject<number>;
   speaking?: boolean;
   facing?: boolean;
+  visualAction?: CharacterVisualAction | null;
 }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -213,21 +219,37 @@ export default function StylizedCharacter({
   useFrame(({ camera, clock }) => {
     const time = animationTime?.current ?? clock.elapsedTime;
     const t = time + position[0];
+    const action = isActionActive(visualAction) ? visualAction : null;
     if (root.current) {
       const dx = camera.position.x - position[0];
       const dz = camera.position.z - position[2];
-      const targetYaw = facing ? Math.atan2(dx, dz) : 0;
+      let targetYaw = 0;
+      if (action?.kind === "face-player" || (facing && !action))
+        targetYaw = Math.atan2(dx, dz);
+      else if (
+        action?.target &&
+        (action.kind === "face-target" ||
+          action.kind === "point-at-target" ||
+          action.kind === "startled")
+      ) {
+        const [tx, , tz] = action.target;
+        targetYaw = Math.atan2(tx - position[0], tz - position[2]);
+      }
       let diff = targetYaw - root.current.rotation.y;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      root.current.rotation.y += diff * 0.12;
+      root.current.rotation.y += diff * (action ? 0.18 : 0.12);
     }
     if (body.current) {
       if (pose === "seated") body.current.position.y = -0.18;
+      else if (action?.kind === "startled")
+        body.current.position.y = -0.04 + Math.sin(t * 16) * 0.02;
       else if (pose === "running")
         body.current.position.y = Math.abs(Math.sin(time * 14)) * 0.055;
       else if (speaking) body.current.position.y = Math.sin(t * 7) * 0.03;
       else body.current.position.y = Math.sin(t * 1.5) * 0.012;
+      body.current.position.z =
+        action?.kind === "startled" ? -0.22 : 0;
     }
     if (pose === "running" || pose === "walking")
       legs.current.forEach((leg, i) => {
@@ -254,14 +276,26 @@ export default function StylizedCharacter({
       leftArm.current.rotation.z = speaking ? -0.22 : -0.12;
     }
     if (rightArm.current) {
-      rightArm.current.rotation.x =
-        name === "Gabby" && facing
-          ? -1.1
-          : speaking
-            ? -0.55 + Math.sin(t * 8.5) * 0.42
-            : -0.07;
-      rightArm.current.rotation.z =
-        name === "Gabby" && facing ? 0.15 : speaking ? 0.72 : 0.12;
+      if (action?.kind === "point-at-target") {
+        rightArm.current.rotation.x = -1.42;
+        rightArm.current.rotation.z = 0.08;
+      } else if (action?.kind === "startled") {
+        rightArm.current.rotation.x = -0.95;
+        rightArm.current.rotation.z = 0.45;
+      } else {
+        rightArm.current.rotation.x =
+          name === "Gabby" && facing
+            ? -1.1
+            : speaking
+              ? -0.55 + Math.sin(t * 8.5) * 0.42
+              : -0.07;
+        rightArm.current.rotation.z =
+          name === "Gabby" && facing ? 0.15 : speaking ? 0.72 : 0.12;
+      }
+    }
+    if (leftArm.current && action?.kind === "startled") {
+      leftArm.current.rotation.x = -0.82;
+      leftArm.current.rotation.z = -0.38;
     }
     if (mouth.current)
       mouth.current.scale.y = speaking
