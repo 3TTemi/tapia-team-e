@@ -32,6 +32,10 @@ export default defineConfig(({ mode }) => {
         process.env.ELEVENLABS_SAM_VOICE_ID ||
         env.ELEVENLABS_SAM_VOICE_ID ||
         "",
+      lucia:
+        process.env.ELEVENLABS_LUCIA_VOICE_ID ||
+        env.ELEVENLABS_LUCIA_VOICE_ID ||
+        "",
     },
   }));
   return {

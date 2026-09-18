@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./translation.css";
 export default function TranslationCaptions({
   spanish,
@@ -9,38 +9,8 @@ export default function TranslationCaptions({
   english: string;
   busy: boolean;
 }) {
-  const [audio, setAudio] = useState(false);
   const [translated, setTranslated] = useState(false);
   const [large, setLarge] = useState(false);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [audioError, setAudioError] = useState("");
-  useEffect(() => {
-    if (!("speechSynthesis" in window)) return;
-    const update = () =>
-      setVoices(
-        window.speechSynthesis
-          .getVoices()
-          .filter((v) => v.lang.toLowerCase().startsWith("es")),
-      );
-    update();
-    window.speechSynthesis.addEventListener("voiceschanged", update);
-    return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", update);
-      window.speechSynthesis.cancel();
-    };
-  }, []);
-  useEffect(() => {
-    if (!audio || busy || !voices.length) return;
-    const speech = new SpeechSynthesisUtterance(spanish);
-    speech.lang = voices[0].lang;
-    speech.voice = voices[0];
-    speech.rate = 0.94;
-    speech.onerror = () =>
-      setAudioError("Audio unavailable. Captions remain on.");
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(speech);
-    return () => window.speechSynthesis.cancel();
-  }, [spanish, audio, busy, voices]);
   return (
     <section
       className={`translation-captions ${large ? "large" : ""}`}
@@ -86,22 +56,6 @@ export default function TranslationCaptions({
             Larger captions {large ? "on" : "off"}
           </button>
         )}
-        <button
-          aria-pressed={audio}
-          disabled={!voices.length}
-          onClick={() => {
-            setAudioError("");
-            setAudio((v) => !v);
-          }}
-        >
-          {audio ? "Mute Spanish voice" : "Play Spanish voice"}
-        </button>
-        <small>
-          {audioError ||
-            (voices.length
-              ? "Browser voice · captions stay on"
-              : "No Spanish voice installed · captions available")}
-        </small>
       </div>
     </section>
   );

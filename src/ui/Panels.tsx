@@ -227,7 +227,7 @@ export function DialogueHud({
       );
       setNotice(reply.notice ?? "");
       setInput("");
-      if (suspect.id !== "lucia") void voice.speak(reply.text);
+      void voice.speak(reply.text);
     } catch (err) {
       setError(
         err instanceof Error
@@ -266,7 +266,7 @@ export function DialogueHud({
         className="dialogue-hud"
         aria-label={`Talking with ${suspect.name}`}
       >
-        {suspect.id !== "lucia" && (
+        {(
           <div className="voice-controls" aria-live="polite">
             <button
               type="button"
