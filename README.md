@@ -21,15 +21,16 @@ npm test        # Character disclosure and solution rules
 
 ## Controls
 
-| Input | Action |
-| --- | --- |
-| WASD / arrow keys | Move |
-| Mouse | Look around |
-| E | Talk to / inspect the object in your crosshair, within reach |
-| N | Open the case notebook |
-| Esc | Release the mouse / dismiss an open panel |
+| Input             | Action                                                       |
+| ----------------- | ------------------------------------------------------------ |
+| WASD / arrow keys | Move                                                         |
+| Shift + movement  | Sprint                                                       |
+| Mouse             | Look around                                                  |
+| E                 | Talk to / inspect the object in your crosshair, within reach |
+| N                 | Open the case notebook                                       |
+| Esc               | Release the mouse / dismiss an open panel                    |
 
-Click **Enter the hackathon** or **Resume investigation** to capture the mouse. If the browser rejects immediate recapture after Escape, click Resume again. Progress and separate suspect transcripts save in this browser's local storage. Use **Case notebook → Reset case** for a clean demo. The 11:47 clock is story atmosphere, not a real time limit.
+Click **Enter the hackathon** or **Resume investigation** to capture the mouse. If the browser rejects immediate recapture after Escape, click Resume again. If mouse capture is unavailable, choose **Use keyboard controls instead**: WASD moves, Q/R turns, T/G looks up/down, and E interacts. Progress and separate suspect transcripts save in this browser's local storage. Use **Case notebook → Reset case** for a clean demo. The 11:47 clock is story atmosphere, not a real time limit.
 
 ## What works today
 
@@ -41,12 +42,12 @@ Click **Enter the hackathon** or **Resume investigation** to capture the mouse. 
 
 ## Team ownership
 
-| Workstream | Files to own | Next deliverable |
-| --- | --- | --- |
-| World / movement | `src/world/World.tsx` | Improve venue, characters, animations; keep interactions reachable |
-| Characters / AI | `src/game/dialogue.ts`, future `server/` | Server-backed character adapter, isolated memories, bounded actions |
-| Interface / experience | `src/ui/Panels.tsx`, `src/styles.css` | Better evidence visuals, dialogue polish, accessibility |
-| Case / integration / QA | `src/game/case.ts`, `src/game/*.test.ts`, `src/App.tsx` | Consistent mystery, playthrough checks, demo script |
+| Workstream              | Files to own                                            | Next deliverable                                                    |
+| ----------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
+| World / movement        | `src/world/World.tsx`                                   | Improve venue, characters, animations; keep interactions reachable  |
+| Characters / AI         | `src/game/dialogue.ts`, future `server/`                | Server-backed character adapter, isolated memories, bounded actions |
+| Interface / experience  | `src/ui/Panels.tsx`, `src/styles.css`                   | Better evidence visuals, dialogue polish, accessibility             |
+| Case / integration / QA | `src/game/case.ts`, `src/game/*.test.ts`, `src/App.tsx` | Consistent mystery, playthrough checks, demo script                 |
 
 Agree on changes to `src/game/types.ts` together. Keep IDs stable. Ask before editing another workstream's files; use small branches and pull requests. `package-lock.json` should be committed with the starter so teammates install the same versions.
 
