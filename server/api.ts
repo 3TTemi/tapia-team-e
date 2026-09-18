@@ -61,22 +61,34 @@ export function createApi(config: () => AIConfig, store = createStore()) {
             return;
           }
         }
-        const data = JSON.parse(raw);
-        const voiceId = config().elevenLabsVoiceIds?.[data?.suspectId];
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          send(res, 400, { error: "Invalid speech request." });
+          return;
+        }
         if (
           !data ||
           typeof data.text !== "string" ||
           !data.text.trim() ||
           data.text.length > 2000 ||
           typeof data.suspectId !== "string" ||
-          !voiceId
+          !characters.some((character) => character.id === data.suspectId)
         ) {
           send(res, 400, { error: "Invalid speech request." });
           return;
         }
         const c = config();
+        const voiceId = c.elevenLabsVoiceIds?.[data.suspectId];
         if (!c.elevenLabsApiKey) {
           send(res, 503, { error: "ElevenLabs is not configured." });
+          return;
+        }
+        if (!voiceId || voiceId === "voice_id_here") {
+          send(res, 503, {
+            error: `No ElevenLabs voice ID configured for ${data.suspectId}. Add it to .env and restart.`,
+          });
           return;
         }
         const response = await fetch(
@@ -97,10 +109,14 @@ export function createApi(config: () => AIConfig, store = createStore()) {
         );
         if (!response.ok) {
           console.error("ElevenLabs request failed:", response.status);
-          send(res, 502, { error: "ElevenLabs could not synthesize the reply." });
+          send(res, 502, {
+            error: "ElevenLabs could not synthesize the reply.",
+          });
           return;
         }
-        const audio = Buffer.from(await response.arrayBuffer()).toString("base64");
+        const audio = Buffer.from(await response.arrayBuffer()).toString(
+          "base64",
+        );
         send(res, 200, { url: `data:audio/mpeg;base64,${audio}` });
       } catch {
         send(res, 502, { error: "Voice service unavailable." });

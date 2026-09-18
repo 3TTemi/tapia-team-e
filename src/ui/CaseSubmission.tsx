@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { clues, suspects } from "../game/case";
+import { suspects } from "../game/case";
 import type { CaseDecision, CaseVerdict } from "../game/submission";
 import type { SaveGame, SuspectId } from "../game/types";
 import "./case-submission.css";
@@ -14,7 +14,6 @@ export default function CaseSubmission({
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState<SuspectId | null>(null);
-  const [missing, setMissing] = useState<string[]>([]);
   return (
     <section
       className="panel case-submission"
@@ -33,6 +32,9 @@ export default function CaseSubmission({
         Choose the person who arranged the cash pickup. Their other secrets are
         not proof of this robbery.
       </p>
+      <p className="hint-box">
+        Demo shortcut: you can submit now, even with no clues collected.
+      </p>
       <fieldset className="case-suspects">
         <legend>Choose one suspect</legend>
         {suspects.map((suspect) => (
@@ -47,7 +49,6 @@ export default function CaseSubmission({
               checked={selected === suspect.id}
               onChange={() => {
                 setSelected(suspect.id);
-                setMissing([]);
               }}
             />
             <span
@@ -67,24 +68,12 @@ export default function CaseSubmission({
         {game.clues.length === 1 ? "clue" : "clues"} will be attached
         automatically.
       </p>
-      {missing.length > 0 && (
-        <div className="hint-box" role="status">
-          <strong>More evidence needed.</strong> No verdict has been made. Find{" "}
-          {missing.join(" and ")} before submitting your case.
-        </div>
-      )}
       <button
         className="primary"
         disabled={!selected}
         onClick={() => {
           if (!selected) return;
-          const decision = onConfirm(selected);
-          if (decision.status === "insufficient-evidence")
-            setMissing(
-              decision.missing.map((id) =>
-                clues.find((clue) => clue.id === id)!.title.toLowerCase(),
-              ),
-            );
+          onConfirm(selected);
         }}
       >
         Confirm accusation <span aria-hidden="true">↗</span>
@@ -154,7 +143,7 @@ export function VerdictOverlay({ verdict }: { verdict: CaseVerdict }) {
         <h1>{solved ? "Case closed." : "Case still open."}</h1>
         <p>
           {solved
-            ? "Two records. One mastermind. Sam arranged the pickup."
+            ? "One mastermind. Sam arranged the pickup."
             : "The accusation does not match the evidence."}
         </p>
         <div className="case-verdict-progress" />

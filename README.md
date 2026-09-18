@@ -1,5 +1,11 @@
 # Last Commit
 
+## ElevenLabs character voices
+
+`npm run dev` starts the real voice endpoint alongside the game. `npm run dev:full` is an alias; no second server is needed. Set `ELEVENLABS_API_KEY` and `ELEVENLABS_ALEX_VOICE_ID`, `ELEVENLABS_JORDAN_VOICE_ID`, `ELEVENLABS_SAM_VOICE_ID` in local `.env`, then restart. Use actual voice IDs, not voice names. The model defaults to `eleven_multilingual_v2`.
+
+Verified final replies trigger voice generation without blocking the next question. The interview includes mute and play/replay controls; replay reuses the last generated clip. Leaving an interview or asking another question stops its audio. Missing configuration, provider failures, and browser playback blocks appear in the interview instead of failing silently. Gabby retains the separate optional Spanish browser voice and English captions.
+
 A detective game: start in a Capital One café, cross the plaza to a robbed bank, question three witnesses, and prove who arranged the cash pickup. A ten-second opening leads into first-person exploration.
 
 ## Run locally

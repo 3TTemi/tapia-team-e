@@ -6,19 +6,16 @@ export type CaseVerdict = {
   status: "solved" | "wrong-suspect";
   suspectId: SuspectId;
 };
-export type CaseDecision =
-  CaseVerdict | { status: "insufficient-evidence"; missing: ClueId[] };
+export type CaseDecision = CaseVerdict;
 
 export function submitCase(game: SaveGame, suspectId: SuspectId) {
-  const missing = CASE_PROOF.filter((id) => !game.clues.includes(id));
-  const decision: CaseDecision = missing.length
-    ? { status: "insufficient-evidence", missing }
-    : {
-        status: evaluateAccusation(suspectId, "robbery", game.clues)
-          ? "solved"
-          : "wrong-suspect",
-        suspectId,
-      };
+  // Demo shortcut: judge the selected culprit without requiring collection.
+  const decision: CaseDecision = {
+    status: evaluateAccusation(suspectId, "robbery", CASE_PROOF)
+      ? "solved"
+      : "wrong-suspect",
+    suspectId,
+  };
   // A failed attempt never removes collected clues or interview history.
   return {
     decision,
