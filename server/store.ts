@@ -42,8 +42,10 @@ export function createStore(directory = path.resolve(".data/interviews")) {
         if (value.version !== 2) return newSession();
         value.characters.lucia ??= { presented: [], history: [] };
         for (const character of Object.values((value as Session).characters)) {
-          for (const message of character.history)
+          for (const message of character.history) {
             message.text = currentCharacterNames(message.text);
+            if (message.translation) message.translation = currentCharacterNames(message.translation);
+          }
         }
         return value;
       } catch (error) {

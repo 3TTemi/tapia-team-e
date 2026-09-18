@@ -51,7 +51,7 @@ export default function TranslationCaptions({
       </div>
       <div aria-live="polite" aria-atomic="true">
         <p className="translation-source" lang="es">
-          <strong>Lucía · Español</strong>
+          <strong>Gabby · Español</strong>
           {busy ? "Preparando respuesta…" : spanish}
         </p>
         <p className="translation-english" lang="en">

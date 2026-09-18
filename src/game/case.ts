@@ -33,15 +33,15 @@ export const suspects: Suspect[] = [
 
 export const translationWitness: Suspect = {
   id: "lucia",
-  name: "Lucía",
+  name: "Gabby",
   role: "WITNESS · ESPAÑOL",
   color: "#59bfc0",
   position: [-3.2, 0, 19.5],
   opening:
-    "Hola, soy Lucía. Vi a un mensajero recoger una bolsa del banco. Puedo contarte lo que vi.",
+    "Hola, soy Gabby. Vi a un mensajero recoger una bolsa del banco. Puedo contarte lo que vi.",
 };
 export const witnessOpeningTranslation =
-  "Hi, I’m Lucía. I saw a courier collect a bag from the bank. I can tell you what I saw.";
+  "Hi, I’m Gabby. I saw a courier collect a bag from the bank. I can tell you what I saw.";
 export const characters: Suspect[] = [...suspects, translationWitness];
 
 export const clues: Clue[] = [
