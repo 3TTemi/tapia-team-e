@@ -83,14 +83,14 @@ function Skyline() {
       <InstancedBoxes items={windows} glow={0.22} rough={0.24} metal={0.65} />
       <Sign
         position={[-21, 3.2, 8.96]}
-        title="M E T R O  /  0 4"
+        title="METRO  /  04"
         subtitle="FINANCIAL DISTRICT"
         width={6}
         height={1.1}
       />
       <Sign
         position={[21, 3.2, 8.96]}
-        title="N O R T H L I N E"
+        title="NORTHLINE"
         subtitle="CITY SERVICES"
         width={6}
         height={1.1}
@@ -411,7 +411,7 @@ export default function PlazaDetails() {
           />
           <Sign
             position={[x, 0.89, 10.83]}
-            title="POLICE LINE  ·  DO NOT CROSS"
+            title="POLICE LINE  ·  DO NOT CROSS  ·  POLICE LINE  ·  DO NOT CROSS"
             width={5.4}
             height={0.14}
             color="#23313a"
