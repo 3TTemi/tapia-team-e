@@ -1,6 +1,11 @@
 import TranslationCaptions from "./TranslationCaptions";
 import { useEffect, useRef, useState } from "react";
 import { clues, suspects, witnessOpeningTranslation } from "../game/case";
+import {
+  commandReaction,
+  parsePlayerCommand,
+  type CharacterVisualAction,
+} from "../game/actions";
 import { RECOMMENDED_CLUES, SAM_DEMO_QUESTION } from "../game/demo";
 import { evaluateAccusation } from "../game/dialogue";
 import {
@@ -126,6 +131,7 @@ export function DialogueHud({
   onStreamText,
   onStreaming,
   onVoiceSpeaking,
+  onCharacterAction,
 }: {
   suspect: Suspect;
   game: SaveGame;
@@ -136,6 +142,7 @@ export function DialogueHud({
   onStreamText: (text: string | null) => void;
   onStreaming: (streaming: boolean) => void;
   onVoiceSpeaking?: (speaking: boolean) => void;
+  onCharacterAction: (id: SuspectId, action: CharacterVisualAction) => void;
 }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -175,6 +182,12 @@ export function DialogueHud({
     onStreaming(true);
     onStreamText("");
     setError("");
+    const command = parsePlayerCommand(message, suspect.id);
+    if (command) {
+      onCharacterAction(suspect.id, command);
+      onStreamText(commandReaction(suspect.id, command.kind));
+      onThinking(false);
+    }
     try {
       const reply =
         suspect.id === "lucia"

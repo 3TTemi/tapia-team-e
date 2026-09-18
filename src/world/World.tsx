@@ -9,6 +9,7 @@ import {
   characters,
   suspects,
 } from "../game/case";
+import { isActionActive, type CharacterVisualAction } from "../game/actions";
 import type { ClueId, Position, SuspectId, TargetId } from "../game/types";
 import CityEnvironment from "./CityEnvironment";
 import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
@@ -130,6 +131,7 @@ function Hacker({
   line,
   thinking,
   streaming,
+  visualAction,
 }: {
   position: Position;
   color: string;
@@ -139,6 +141,7 @@ function Hacker({
   line: string | null;
   thinking: boolean;
   streaming?: boolean;
+  visualAction?: CharacterVisualAction | null;
 }) {
   return (
     <StylizedCharacter
@@ -146,7 +149,8 @@ function Hacker({
       color={color}
       name={name}
       speaking={speaking}
-      facing={Boolean(line)}
+      facing={Boolean(line) && !isActionActive(visualAction)}
+      visualAction={visualAction}
     >
       {line && name !== "Gabby" ? (
         <group position={[0, 2.15, 0]}>
@@ -238,6 +242,7 @@ function Room({
   thinking,
   streaming,
   talkGuide,
+  characterActions,
 }: {
   collected: ClueId[];
   target: TargetId | null;
@@ -248,6 +253,7 @@ function Room({
   thinking: boolean;
   streaming?: boolean;
   talkGuide: SuspectId | null;
+  characterActions: Partial<Record<SuspectId, CharacterVisualAction>>;
 }) {
   return (
     <>
@@ -306,6 +312,7 @@ function Room({
           speaking={talkingTo === s.id && speaking}
           thinking={talkingTo === s.id && thinking}
           streaming={talkingTo === s.id && streaming}
+          visualAction={characterActions[s.id] ?? null}
           line={talkingTo === s.id ? bubbleText : null}
         />
       ))}
@@ -480,6 +487,7 @@ export default function World({
   thinking,
   streaming,
   talkGuide,
+  characterActions,
   onTarget,
   onLock,
   cinematic,
@@ -502,6 +510,7 @@ export default function World({
   thinking: boolean;
   streaming?: boolean;
   talkGuide: SuspectId | null;
+  characterActions: Partial<Record<SuspectId, CharacterVisualAction>>;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
   cinematic: boolean;
@@ -546,6 +555,7 @@ export default function World({
             thinking={thinking}
             streaming={streaming}
             talkGuide={talkGuide}
+            characterActions={characterActions}
           />
           <Player
             active={active}
