@@ -1,4 +1,4 @@
-.case-submission {
+.panel.case-submission {
   width: min(100%, 680px);
 }
 .case-submission > p {
