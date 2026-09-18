@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { clues, characters } from "../src/game/case";
 import type { ClueId, SuspectId } from "../src/game/types";
-import { interview } from "./interview";
+import { interview, interviewStream } from "./interview";
+import { sendSSE, writeSSE } from "./sse";
 import { createStore } from "./store";
 import type { AIConfig } from "./gemini";
 
@@ -21,7 +22,6 @@ export function createApi(config: () => AIConfig) {
   ) => {
     const route = req.url?.split("?")[0];
     if (!route?.startsWith("/api/")) return next();
-    // Same-origin localhost service; no cross-origin API access.
     if (req.headers.origin) {
       try {
         if (new URL(req.headers.origin).host !== req.headers.host) {
@@ -46,6 +46,7 @@ export function createApi(config: () => AIConfig) {
         model: c.model,
         configured: !!(c.apiKey || c.openaiApiKey),
         backupConfigured: !!c.openaiApiKey,
+        streaming: true,
       });
       return;
     }
@@ -109,18 +110,41 @@ export function createApi(config: () => AIConfig) {
       }
       locked = true;
       const session = await store.read(id!);
-      // This is a local single-player prototype. The client reports collected clues;
-      // the server owns each NPC's presented evidence and private transcript.
       session.collected = [
         ...new Set([...session.collected, ...data.collectedClues]),
       ] as ClueId[];
       const suspectId = data.suspectId as SuspectId;
+      const interviewInput = {
+        suspectId,
+        message: data.message.trim(),
+        presentedClue: data.presentedClue,
+      };
+      const useStream = data.stream !== false;
+
+      if (useStream) {
+        writeSSE(res);
+        const result = await interviewStream(
+          interviewInput,
+          session.characters[suspectId],
+          config(),
+          {
+            start: (info) => sendSSE(res, "start", info),
+            token: (_delta, text) => sendSSE(res, "token", { text }),
+            replace: (text, notice) =>
+              sendSSE(res, "replace", { text, notice }),
+          },
+        );
+        await store.write(id!, session);
+        sendSSE(res, "done", {
+          ...result,
+          history: session.characters[suspectId].history,
+        });
+        res.end();
+        return;
+      }
+
       const result = await interview(
-        {
-          suspectId,
-          message: data.message.trim(),
-          presentedClue: data.presentedClue,
-        },
+        interviewInput,
         session.characters[suspectId],
         config(),
       );
@@ -130,10 +154,18 @@ export function createApi(config: () => AIConfig) {
         history: session.characters[suspectId].history,
       });
     } catch {
-      send(res, 500, {
-        error:
-          "The local interview service could not save this turn. Please retry.",
-      });
+      if (res.headersSent) {
+        sendSSE(res, "error", {
+          error:
+            "The local interview service could not save this turn. Please retry.",
+        });
+        res.end();
+      } else {
+        send(res, 500, {
+          error:
+            "The local interview service could not save this turn. Please retry.",
+        });
+      }
     } finally {
       if (locked && id) store.unlock(id);
     }

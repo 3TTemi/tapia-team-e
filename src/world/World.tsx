@@ -80,15 +80,17 @@ function SpeechBubble({
   name,
   text,
   thinking,
+  streaming,
 }: {
   name: string;
   text: string;
   thinking: boolean;
+  streaming?: boolean;
 }) {
   return (
     <Html style={{ pointerEvents: "none" }} zIndexRange={[20, 0]}>
       <div
-        className={`speech-bubble ${thinking ? "thinking" : ""}`}
+        className={`speech-bubble ${thinking ? "thinking" : ""} ${streaming ? "streaming" : ""}`}
         aria-live="polite"
       >
         <small>{name}</small>
@@ -106,6 +108,7 @@ function Hacker({
   speaking,
   line,
   thinking,
+  streaming,
 }: {
   position: Position;
   color: string;
@@ -114,6 +117,7 @@ function Hacker({
   speaking: boolean;
   line: string | null;
   thinking: boolean;
+  streaming?: boolean;
 }) {
   return (
     <StylizedCharacter
@@ -125,7 +129,12 @@ function Hacker({
     >
       {line && name !== "Lucía" ? (
         <group position={[0, 2.15, 0]}>
-          <SpeechBubble name={name} text={line} thinking={thinking} />
+          <SpeechBubble
+            name={name}
+            text={line}
+            thinking={thinking}
+            streaming={streaming}
+          />
         </group>
       ) : (
         <Label position={[0, 2.4, 0]}>
@@ -206,6 +215,7 @@ function Room({
   speaking,
   bubbleText,
   thinking,
+  streaming,
 }: {
   collected: ClueId[];
   target: TargetId | null;
@@ -214,6 +224,7 @@ function Room({
   speaking: boolean;
   bubbleText: string | null;
   thinking: boolean;
+  streaming?: boolean;
 }) {
   return (
     <>
@@ -236,7 +247,7 @@ function Room({
         color="#bc9876"
       />
       <Label position={[-3.6, 1.5, -4.5]} className="missing-label">
-        SPARKY // OFFLINE
+        CASH // MISSING
       </Label>
       <Block
         position={[5.2, 1.04, -4.5]}
@@ -271,6 +282,7 @@ function Room({
           {...s}
           speaking={talkingTo === s.id && speaking}
           thinking={talkingTo === s.id && thinking}
+          streaming={talkingTo === s.id && streaming}
           line={talkingTo === s.id ? bubbleText : null}
         />
       ))}
@@ -442,6 +454,7 @@ export default function World({
   speaking,
   bubbleText,
   thinking,
+  streaming,
   onTarget,
   onLock,
   cinematic,
@@ -462,6 +475,7 @@ export default function World({
   speaking: boolean;
   bubbleText: string | null;
   thinking: boolean;
+  streaming?: boolean;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
   cinematic: boolean;
@@ -504,6 +518,7 @@ export default function World({
             speaking={speaking}
             bubbleText={bubbleText}
             thinking={thinking}
+            streaming={streaming}
           />
           <Player
             active={active}

@@ -1,8 +1,13 @@
 import TranslationCaptions from "./TranslationCaptions";
 import { useEffect, useRef, useState } from "react";
 import { clues, suspects, witnessOpeningTranslation } from "../game/case";
+import { RECOMMENDED_CLUES, SAM_DEMO_QUESTION } from "../game/demo";
 import { evaluateAccusation } from "../game/dialogue";
-import { getChatStatus, requestInterview } from "../game/chat";
+import {
+  getChatStatus,
+  requestInterview,
+  requestInterviewStream,
+} from "../game/chat";
 import type {
   Clue,
   ClueId,
@@ -16,10 +21,12 @@ export function CaseBrief({
   resume,
   hasSave,
   onWatchOpening,
+  onStartDemo,
 }: {
   resume: () => void;
   hasSave: boolean;
   onWatchOpening: () => void;
+  onStartDemo: () => void;
 }) {
   return (
     <section className="brief">
@@ -43,6 +50,9 @@ export function CaseBrief({
       </p>
       <button className="primary start-button" onClick={resume}>
         {hasSave ? "Continue investigation" : "Enter the café"} <span>↗</span>
+      </button>
+      <button className="demo-start-button" onClick={onStartDemo}>
+        Start 90s demo <span>↗ reset · opening · guide</span>
       </button>
       {hasSave && (
         <button className="text-button opening-replay" onClick={onWatchOpening}>
@@ -108,15 +118,21 @@ export function CluePanel({
 export function DialogueHud({
   suspect,
   game,
+  demoMode,
   onMessages,
   onClose,
   onThinking,
+  onStreamText,
+  onStreaming,
 }: {
   suspect: Suspect;
   game: SaveGame;
+  demoMode?: boolean;
   onMessages: (id: SuspectId, messages: Message[]) => void;
   onClose: () => void;
   onThinking: (thinking: boolean) => void;
+  onStreamText: (text: string | null) => void;
+  onStreaming: (streaming: boolean) => void;
 }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -151,14 +167,36 @@ export function DialogueHud({
     if (busy || !message.trim()) return;
     setBusy(true);
     onThinking(true);
+    onStreaming(true);
+    onStreamText("");
     setError("");
     try {
-      const reply = await requestInterview({
-        suspectId: suspect.id,
-        message,
-        presentedClue,
-        collectedClues: game.clues,
-      });
+      const reply =
+        suspect.id === "lucia"
+          ? await requestInterview({
+              suspectId: suspect.id,
+              message,
+              presentedClue,
+              collectedClues: game.clues,
+            })
+          : await requestInterviewStream(
+              {
+                suspectId: suspect.id,
+                message,
+                presentedClue,
+                collectedClues: game.clues,
+              },
+              {
+                onToken: (text) => {
+                  if (text) onThinking(false);
+                  onStreamText(text);
+                },
+                onReplace: (text, notice) => {
+                  onStreamText(text);
+                  if (notice) setNotice(notice);
+                },
+              },
+            );
       onMessages(suspect.id, reply.history);
       setMode(
         reply.mode === "openai"
@@ -180,13 +218,29 @@ export function DialogueHud({
     } finally {
       setBusy(false);
       onThinking(false);
+      onStreaming(false);
+      onStreamText(null);
       field.current?.focus();
     }
   }
-  const collected = clues.filter((c) => game.clues.includes(c.id));
   const lastWitnessReply = [...game.histories[suspect.id]]
     .reverse()
     .find((m) => m.role === "suspect");
+  const recommended = new Set(RECOMMENDED_CLUES[suspect.id]);
+  const collected = clues
+    .filter((c) => game.clues.includes(c.id))
+    .sort(
+      (a, b) =>
+        Number(recommended.has(b.id)) - Number(recommended.has(a.id)) ||
+        clues.indexOf(a) - clues.indexOf(b),
+    );
+  const demoPrompt =
+    demoMode && suspect.id === "sam" && !game.histories.sam.length
+      ? SAM_DEMO_QUESTION
+      : "";
+  useEffect(() => {
+    if (demoPrompt) setInput(demoPrompt);
+  }, [demoPrompt]);
   return (
     <>
       <aside
@@ -205,6 +259,11 @@ export function DialogueHud({
             Walk away
           </button>
         </div>
+        {demoMode && recommended.size > 0 && (
+          <p className="dialogue-hud-demo muted">
+            Present highlighted evidence — skip typing unless prompted.
+          </p>
+        )}
         {suspect.id === "lucia" && (
           <button
             className="chip"
@@ -219,7 +278,9 @@ export function DialogueHud({
             {collected.map((c) => (
               <button
                 disabled={busy}
-                className="chip"
+                className={
+                  recommended.has(c.id) ? "chip chip-suggested" : "chip"
+                }
                 key={c.id}
                 onClick={() => send(`Explain this: ${c.title}.`, c.id)}
               >
