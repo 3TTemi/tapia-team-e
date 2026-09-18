@@ -185,7 +185,7 @@ export function DialogueHud({
             · {suspect.role.toLowerCase()} · {mode}
           </span>
         </span>
-        <button className="text-button" onClick={onClose}>
+        <button className="dialogue-hud-leave" onClick={onClose}>
           Walk away
         </button>
       </div>
