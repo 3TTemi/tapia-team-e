@@ -17,6 +17,7 @@ import {
   type Texture,
 } from "three";
 import type { Position } from "../game/types";
+import { createSignCanvas } from "./signCanvas";
 
 export const art = {
   ink: "#101e28",
@@ -282,33 +283,20 @@ export function Sign({
   border?: boolean;
 }) {
   const texture = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1024;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, 1024, 256);
-    if (border) {
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.35;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(14, 14, 996, 228);
-      ctx.globalAlpha = 1;
-    }
-    ctx.fillStyle = color;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "500 62px Arial, sans-serif";
-    ctx.fillText(title, 512, subtitle ? 101 : 130, 926);
-    if (subtitle) {
-      ctx.font = "400 26px Arial, sans-serif";
-      ctx.fillText(subtitle, 512, 182, 925);
-    }
+    const canvas = createSignCanvas({
+      title,
+      subtitle,
+      width,
+      height,
+      color,
+      background,
+      border,
+    });
     const result = new CanvasTexture(canvas);
     result.colorSpace = SRGBColorSpace;
-    result.anisotropy = 4;
+    result.anisotropy = 8;
     return result;
-  }, [title, subtitle, color, background, border]);
+  }, [title, subtitle, width, height, color, background, border]);
   useEffect(() => () => texture.dispose(), [texture]);
   return (
     <mesh position={position} rotation={[0, rotation, 0]}>

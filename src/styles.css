@@ -74,8 +74,8 @@ p {
 }
 h2 {
   font-size: 30px;
-  letter-spacing: -1px;
-  line-height: 1.15;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
   margin-bottom: 16px;
 }
 p {
@@ -205,8 +205,8 @@ kbd {
 .brief h1 {
   font-size: clamp(68px, 7.5vw, 112px);
   font-weight: 900;
-  line-height: 0.9;
-  letter-spacing: -7px;
+  line-height: 1;
+  letter-spacing: -0.035em;
   margin: 28px 0;
 }
 .brief h1 span {
@@ -230,6 +230,7 @@ kbd {
 }
 .brief-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   font-size: 10px;
   color: #a3b09e;
@@ -277,13 +278,14 @@ kbd {
   color: #e9eed4;
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.35;
   user-select: none;
 }
 .world-label small {
   display: block;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.08em;
   margin-top: 5px;
   color: #c4c8b4;
 }
@@ -306,7 +308,7 @@ kbd {
   border-color: #5f7554;
 }
 .world-label.missing-label {
-  font-size: 8px;
+  font-size: 10px;
   background: #392f26;
   color: #e8c394;
 }
@@ -314,6 +316,7 @@ kbd {
   position: absolute;
   top: 112px;
   left: 35px;
+  max-width: calc(100% - 70px);
   background: #12201adc;
   border: 1px solid #c4d4b520;
   border-left: 2px solid var(--lime);
@@ -367,9 +370,14 @@ kbd {
   border: 1px solid #d4e5b333;
   border-radius: 5px;
   padding: 12px 20px;
-  white-space: nowrap;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  line-height: 1.5;
   pointer-events: none;
   font-size: 13px;
+}
+.interaction-prompt kbd {
+  flex-shrink: 0;
 }
 .interaction-prompt strong {
   color: var(--lime);
@@ -890,8 +898,7 @@ kbd {
     transform: translateY(-40%);
   }
   .brief h1 {
-    font-size: 78px;
-    letter-spacing: -5px;
+    font-size: clamp(52px, 10vw, 78px);
   }
   .brief-copy {
     font-size: 12px;
@@ -912,6 +919,7 @@ kbd {
   .objective {
     top: 86px;
     left: 18px;
+    max-width: calc(100% - 36px);
     padding: 12px 15px;
   }
   .objective h3 {
@@ -951,7 +959,7 @@ kbd {
 }
 @media (max-height: 740px) {
   .brief h1 {
-    font-size: 76px;
+    font-size: clamp(52px, 10vw, 76px);
     margin: 20px 0;
   }
   .brief-copy {

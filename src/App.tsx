@@ -4,6 +4,10 @@ import World from "./world/World";
 import { clues, suspects } from "./game/case";
 import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
+import InvestigationBoard, {
+  loadBoardLinks,
+  persistBoardLinks,
+} from "./ui/InvestigationBoard";
 import OpeningOverlay from "./ui/OpeningOverlay";
 import { createOpeningAudio, type OpeningAudio } from "./world/openingAudio";
 import type { OpeningShot } from "./world/openingTimeline";
@@ -16,7 +20,7 @@ import {
   Notebook,
 } from "./ui/Panels";
 
-type Panel = TargetId | "notebook" | "accusation" | "ending" | null;
+type Panel = TargetId | "notebook" | "board" | "accusation" | "ending" | null;
 const INTRO_SEEN_KEY = "last-commit-opening-seen-v1";
 
 function hasSeenOpening() {
@@ -29,6 +33,14 @@ function hasSeenOpening() {
 
 export default function App() {
   const [game, setGame] = useState(loadGame);
+  const [boardLinks, setBoardLinks] = useState(loadBoardLinks);
+  const updateBoardLinks = (links: typeof boardLinks) => {
+    setBoardLinks(links);
+    if (!persistBoardLinks(links))
+      setError(
+        "Browser storage is unavailable. Board connections will last only for this tab.",
+      );
+  };
   const [started, setStarted] = useState(false);
   const [locked, setLocked] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
@@ -187,6 +199,10 @@ export default function App() {
       if (e.code === "KeyE" && (locked || keyboardMode) && target) {
         e.preventDefault();
         open(target);
+      }
+      if (e.code === "KeyB") {
+        e.preventDefault();
+        open("board");
       }
       if (e.code === "KeyN") {
         e.preventDefault();
@@ -364,6 +380,11 @@ export default function App() {
               </section>
             </div>
           )}
+          {!panel && !talkingTo && (
+            <button className="board-launcher" onClick={() => open("board")}>
+              <kbd>B</kbd> Investigation board <span aria-hidden="true">⌁</span>
+            </button>
+          )}
           {!talkingTo && (
             <footer className="game-footer">
               <div className="control-hints">
@@ -442,6 +463,14 @@ export default function App() {
           }}
         >
           {clue && <CluePanel clue={clue} onClose={resume} />}
+          {panel === "board" && (
+            <InvestigationBoard
+              game={game}
+              links={boardLinks}
+              onLinks={updateBoardLinks}
+              onClose={resume}
+            />
+          )}
           {panel === "notebook" && (
             <Notebook
               game={game}
@@ -455,6 +484,7 @@ export default function App() {
                 ) {
                   resetInterviews();
                   setGame(freshGame());
+                  updateBoardLinks([]);
                   setIntroSeen(false);
                   setEnterAtBank(false);
                   setKeyboardMode(false);

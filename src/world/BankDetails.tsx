@@ -273,7 +273,7 @@ export default function BankDetails() {
       />
       <Sign
         position={[0, 8.58, 9.32]}
-        title="C A P I T A L   O N E"
+        title="CAPITAL ONE"
         subtitle="FINANCIAL DISTRICT  /  CENTRAL BRANCH"
         width={15}
         height={1.45}
