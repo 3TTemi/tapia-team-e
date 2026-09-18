@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { clues, suspects } from "../game/case";
-import { evaluateAccusation, getReply } from "../game/dialogue";
+import { evaluateAccusation } from "../game/dialogue";
+import { getChatStatus, requestInterview } from "../game/chat";
 import type {
   Clue,
   ClueId,
@@ -13,9 +14,11 @@ import type {
 export function CaseBrief({
   resume,
   hasSave,
+  onWatchOpening,
 }: {
   resume: () => void;
   hasSave: boolean;
+  onWatchOpening: () => void;
 }) {
   return (
     <section className="brief">
@@ -28,18 +31,23 @@ export function CaseBrief({
         <span>COMMIT.</span>
       </h1>
       <p className="brief-lead">
-        One missing robot.
+        One bank robbery.
         <br />
         Three people with something to hide.
       </p>
       <p className="brief-copy">
-        It’s 11:47 PM at the hackathon. Your prototype, Sparky, has vanished.
-        Find the evidence. Question the room. Get your demo back.
+        An alarm breaks the quiet outside the café. The bank’s cash is gone.
+        Three witnesses are hiding something. Find out whose secret explains the
+        robbery.
       </p>
       <button className="primary start-button" onClick={resume}>
-        {hasSave ? "Continue investigation" : "Enter the hackathon"}{" "}
-        <span>↗</span>
+        {hasSave ? "Continue investigation" : "Enter the café"} <span>↗</span>
       </button>
+      {hasSave && (
+        <button className="text-button opening-replay" onClick={onWatchOpening}>
+          Watch opening again <span>10 seconds</span>
+        </button>
+      )}
       <div className="brief-controls">
         <span>
           <kbd>W A S D</kbd> move
@@ -52,7 +60,7 @@ export function CaseBrief({
         </span>
       </div>
       <div className="prototype-note">
-        PLAYABLE PROTOTYPE 01 <span>·</span> SCRIPTED CHARACTERS
+        PLAYABLE PROTOTYPE 01 <span>·</span> THREE WITNESSES. THREE SECRETS.
       </div>
     </section>
   );
@@ -112,8 +120,23 @@ export function DialogueHud({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState("Connecting…");
+  const [notice, setNotice] = useState("");
   const field = useRef<HTMLInputElement>(null);
-  const history = game.histories[suspect.id];
+  useEffect(() => {
+    let active = true;
+    getChatStatus()
+      .then((status) => {
+        if (active)
+          setMode(status.mode === "gemini" ? "Gemini ready" : "Scripted mode");
+      })
+      .catch(() => {
+        if (active) setMode("Service unavailable");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     field.current?.focus();
   }, [suspect.id]);
@@ -123,20 +146,28 @@ export function DialogueHud({
     onThinking(true);
     setError("");
     try {
-      const reply = await getReply({
+      const reply = await requestInterview({
         suspectId: suspect.id,
         message,
         presentedClue,
-        history,
+        collectedClues: game.clues,
       });
-      onMessages(suspect.id, [
-        ...history,
-        { role: "player", text: message },
-        { role: "suspect", text: reply },
-      ]);
+      onMessages(suspect.id, reply.history);
+      setMode(
+        reply.mode === "gemini"
+          ? "Gemini live"
+          : reply.mode === "guarded"
+            ? "Authored · fact-check fallback"
+            : "Scripted mode",
+      );
+      setNotice(reply.notice ?? "");
       setInput("");
-    } catch {
-      setError("They didn’t catch that. Try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "The character could not respond. Please retry.",
+      );
     } finally {
       setBusy(false);
       onThinking(false);
@@ -149,7 +180,10 @@ export function DialogueHud({
       <div className="dialogue-hud-top">
         <span>
           <strong>{suspect.name}</strong>
-          <span className="muted"> · {suspect.role.toLowerCase()}</span>
+          <span className="muted">
+            {" "}
+            · {suspect.role.toLowerCase()} · {mode}
+          </span>
         </span>
         <button className="text-button" onClick={onClose}>
           Walk away
@@ -169,6 +203,7 @@ export function DialogueHud({
           ))}
         </div>
       )}
+      {notice && <p className="dialogue-hud-notice muted">{notice}</p>}
       {error && (
         <p role="alert" className="error">
           {error}
@@ -278,7 +313,7 @@ export function Accusation({
   onClose: () => void;
 }) {
   const [suspect, setSuspect] = useState<SuspectId>("alex");
-  const [motive, setMotive] = useState("sabotage");
+  const [motive, setMotive] = useState("robbery");
   const [evidence, setEvidence] = useState<ClueId[]>([]);
   const [feedback, setFeedback] = useState("");
   return (
@@ -294,13 +329,13 @@ export function Accusation({
           ✕
         </button>
       </div>
-      <h2>What happened to Sparky?</h2>
+      <h2>Who planned the robbery?</h2>
       <p className="muted">
         A good detective can explain who, why, and the evidence that connects
         them.
       </p>
       <label>
-        Who moved the robot?
+        Who arranged the cash pickup?
         <select
           value={suspect}
           onChange={(e) => setSuspect(e.target.value as SuspectId)}
@@ -315,9 +350,11 @@ export function Accusation({
       <label>
         Why?
         <select value={motive} onChange={(e) => setMotive(e.target.value)}>
-          <option value="sabotage">To sabotage our demo</option>
-          <option value="copy">To copy our design</option>
-          <option value="safety">To deal with a battery safety issue</option>
+          <option value="robbery">
+            To steal the bank’s cash through a courier
+          </option>
+          <option value="liquor">To steal the manager’s liquor</option>
+          <option value="sleep">To hide sleeping on duty</option>
         </select>
       </label>
       <fieldset>
@@ -355,7 +392,7 @@ export function Accusation({
           evaluateAccusation(suspect, motive, evidence)
             ? onSolve()
             : setFeedback(
-                "That theory isn’t supported yet. You need evidence of both the move and the reason behind it. Keep investigating; you can try again.",
+                "That theory isn’t supported yet. You need evidence of both staff-corridor access and the courier booking. Keep investigating; you can try again.",
               )
         }
       >
@@ -376,27 +413,19 @@ export function Ending({ onClose }: { onClose: () => void }) {
       <div className="eyebrow">
         <span className="status-dot" /> CASE CLOSED
       </div>
-      <div className="sparky-art">
-        <div className="antenna" />
-        <div className="robot-head">
-          <i />
-          <i />
-        </div>
-        <div className="robot-body">S</div>
-      </div>
       <h2>
-        One last commit.
+        Everyone hid something.
         <br />
-        <span>One saved demo.</span>
+        <span>Ellis planned the robbery.</span>
       </h2>
       <p>
-        Sam moved Sparky to the repair room after its battery overheated. Alex
-        broke the build. Jordan copied your design. Three secrets. One missing
-        robot.
+        Milo stole the manager’s liquor. Boone slept through his shift. Ellis
+        used the unlocked security terminal to send a courier for the bank’s
+        cash.
       </p>
       <div className="hint-box">
-        You connected the access evidence to the battery alert. Sparky is
-        accounted for—now your team can fix the demo.
+        The staff-corridor record places Ellis inside. The pickup instructions
+        connect his contractor ID to the runner. Two records. One mastermind.
       </div>
       <button className="primary" onClick={onClose}>
         Return to the room ↗

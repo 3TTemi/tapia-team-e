@@ -197,7 +197,9 @@ export function Solid({
       position={position}
       rotation={rotation}
       args={size}
-      radius={round}
+      // Drei's extruded rounded box does not clamp the bevel itself. A radius
+      // larger than a thin prop's half-height folds its faces over each other.
+      radius={Math.min(round, Math.min(...size) * 0.49)}
       smoothness={2}
       bevelSegments={2}
       castShadow={shadow && !glow}

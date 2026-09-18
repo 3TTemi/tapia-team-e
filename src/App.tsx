@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { resetInterviews } from "./game/chat";
+import { useCallback, useEffect, useRef, useState } from "react";
 import World from "./world/World";
 import { clues, suspects } from "./game/case";
 import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
+import OpeningOverlay from "./ui/OpeningOverlay";
+import { createOpeningAudio, type OpeningAudio } from "./world/openingAudio";
+import type { OpeningShot } from "./world/openingTimeline";
 import {
   Accusation,
   CaseBrief,
@@ -13,6 +17,15 @@ import {
 } from "./ui/Panels";
 
 type Panel = TargetId | "notebook" | "accusation" | "ending" | null;
+const INTRO_SEEN_KEY = "last-commit-opening-seen-v1";
+
+function hasSeenOpening() {
+  try {
+    return localStorage.getItem(INTRO_SEEN_KEY) === "yes";
+  } catch {
+    return false;
+  }
+}
 
 export default function App() {
   const [game, setGame] = useState(loadGame);
@@ -25,19 +38,31 @@ export default function App() {
   const [thinking, setThinking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState("");
+  const [introSeen, setIntroSeen] = useState(hasSeenOpening);
+  const [cinematic, setCinematic] = useState(false);
+  const [skipIntro, setSkipIntro] = useState(false);
+  const [introShot, setIntroShot] = useState<OpeningShot>("cafe");
+  const [enterAtBank, setEnterAtBank] = useState(false);
+  const introAudio = useRef<OpeningAudio>(null);
+  const hasProgress =
+    game.clues.length > 0 ||
+    game.solved ||
+    Object.values(game.histories).some((history) => history.length > 0);
+  const canContinue = introSeen || hasProgress;
+  useEffect(
+    () => () => {
+      introAudio.current?.dispose();
+    },
+    [],
+  );
   useEffect(() => {
     if (!persistGame(game))
       setError(
         "Browser storage is unavailable. Progress will last only for this tab.",
       );
   }, [game]);
-  const resume = useCallback(() => {
-    setStarted(true);
-    setPanel(null);
-    setTalkingTo(null);
-    setThinking(false);
-    setSpeaking(false);
-    if (keyboardMode) return;
+  const captureMouse = useCallback(() => {
+    setError("");
     const canvas = document.querySelector("canvas");
     if (!canvas?.requestPointerLock) {
       setError(
@@ -49,7 +74,7 @@ export default function App() {
       const result = canvas.requestPointerLock();
       result?.catch(() =>
         setError(
-          "Click Resume to capture the mouse. Your browser may require another click after Escape.",
+          "Your browser needs a direct click for mouse control. Use the mouse control button, or continue with keyboard controls.",
         ),
       );
     } catch {
@@ -57,7 +82,60 @@ export default function App() {
         "Mouse capture failed. Click Resume and allow mouse control in your browser.",
       );
     }
-  }, [keyboardMode]);
+  }, []);
+  const onLock = useCallback((value: boolean) => {
+    setLocked(value);
+    if (value) {
+      setKeyboardMode(false);
+      setError("");
+    }
+  }, []);
+  const resume = useCallback(() => {
+    setStarted(true);
+    setPanel(null);
+    setTalkingTo(null);
+    setThinking(false);
+    setSpeaking(false);
+    if (!keyboardMode) captureMouse();
+  }, [keyboardMode, captureMouse]);
+  const completeIntro = useCallback(() => {
+    introAudio.current?.dispose();
+    introAudio.current = null;
+    setCinematic(false);
+    setIntroSeen(true);
+    setEnterAtBank(true);
+    setKeyboardMode(true);
+    setTarget(null);
+    try {
+      localStorage.setItem(INTRO_SEEN_KEY, "yes");
+    } catch {
+      /* In-memory state still prevents replay. */
+    }
+  }, []);
+  const startOpening = useCallback(() => {
+    setError("");
+    setStarted(true);
+    setPanel(null);
+    setEnterAtBank(false);
+    document.exitPointerLock?.();
+    introAudio.current?.dispose();
+    introAudio.current = createOpeningAudio();
+    setSkipIntro(false);
+    setIntroShot("cafe");
+    setCinematic(true);
+  }, []);
+  const startGame = useCallback(() => {
+    if (canContinue) {
+      setError("");
+      setStarted(true);
+      setPanel(null);
+      setEnterAtBank(true);
+      setKeyboardMode(true);
+      captureMouse();
+      return;
+    }
+    startOpening();
+  }, [canContinue, captureMouse, startOpening]);
   const open = useCallback((next: Panel) => {
     document.exitPointerLock?.();
     if (suspects.some((s) => s.id === next)) {
@@ -88,6 +166,13 @@ export default function App() {
       )
         return;
       if (!started || panel || e.repeat) return;
+      if (cinematic) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          setSkipIntro(true);
+        }
+        return;
+      }
       if (talkingTo) {
         if (e.code === "Escape") {
           e.preventDefault();
@@ -110,7 +195,17 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [started, panel, talkingTo, locked, keyboardMode, target, open, resume]);
+  }, [
+    started,
+    panel,
+    talkingTo,
+    cinematic,
+    locked,
+    keyboardMode,
+    target,
+    open,
+    resume,
+  ]);
   const saveMessages = (id: SuspectId, messages: Message[]) =>
     setGame((prev) => ({
       ...prev,
@@ -140,9 +235,14 @@ export default function App() {
     clues.find((c) => c.id === target)?.title;
   return (
     <main className="game-shell">
-      <div className={`world ${!started ? "world-intro" : ""}`}>
+      <div
+        className={`world ${!started ? "world-intro" : ""}`}
+        onClick={() => {
+          if (started && !cinematic && !panel && keyboardMode) captureMouse();
+        }}
+      >
         <World
-          active={started && !panel && !talkingTo}
+          active={started && !panel && !talkingTo && !cinematic}
           keyboardMode={keyboardMode}
           collected={game.clues}
           target={target}
@@ -151,36 +251,51 @@ export default function App() {
           bubbleText={bubbleText}
           thinking={thinking}
           onTarget={setTarget}
-          onLock={setLocked}
+          onLock={onLock}
+          cinematic={cinematic}
+          skipIntro={skipIntro}
+          introAudio={introAudio}
+          onIntroShot={setIntroShot}
+          onIntroComplete={completeIntro}
+          enterAtBank={enterAtBank}
         />
       </div>
       <div className="vignette" />
-      <header className="top-bar">
-        <a className="wordmark" href="/" aria-label="Last Commit home">
-          <span className="logo-mark">LC</span> LAST COMMIT
-          <span className="wordmark-divider">/</span>
-          <span className="wordmark-sub">CASE 001</span>
-        </a>
-        <div className="top-status">
-          <span className="status-dot" /> LOCAL PROTOTYPE{" "}
-          <span className="version">v0.1</span>
-        </div>
-      </header>
+      {!cinematic && (
+        <header className="top-bar">
+          <a className="wordmark" href="/" aria-label="Last Commit home">
+            <span className="logo-mark">LC</span> LAST COMMIT
+            <span className="wordmark-divider">/</span>
+            <span className="wordmark-sub">CASE 001</span>
+          </a>
+          <div className="top-status">
+            <span className="status-dot" /> LOCAL PROTOTYPE{" "}
+            <span className="version">v0.1</span>
+          </div>
+        </header>
+      )}
       {!started && (
         <>
           <div className="intro-shade" />
-          <CaseBrief resume={resume} hasSave={game.clues.length > 0} />
+          <CaseBrief
+            resume={startGame}
+            hasSave={canContinue}
+            onWatchOpening={startOpening}
+          />
           <div className="scene-caption">
             <span className="eyebrow">THE SCENE</span>
             <p>
-              TAPIA hackathon
+              BANK DISTRICT
               <br />
               <span>11:47 PM · Somewhere between ambition and caffeine.</span>
             </p>
           </div>
         </>
       )}
-      {started && (
+      {cinematic && (
+        <OpeningOverlay shot={introShot} onSkip={() => setSkipIntro(true)} />
+      )}
+      {started && !cinematic && (
         <>
           <aside className="objective">
             <div className="eyebrow">
@@ -188,8 +303,10 @@ export default function App() {
             </div>
             <h3>
               {game.solved
-                ? "Sparky is accounted for."
-                : "Find out who moved Sparky."}
+                ? "The robbery is solved."
+                : game.clues.length === 0
+                  ? "Investigate the bank."
+                  : "Find out who arranged the robbery."}
             </h3>
             <p>
               {game.clues.length} / {clues.length} clues collected{" "}
@@ -214,7 +331,7 @@ export default function App() {
                   </>
                 ) : (
                   <span className="explore-hint">
-                    Explore the room. Follow the gold markers.
+                    Enter the bank. Follow the gold markers.
                   </span>
                 )}
               </div>
@@ -268,6 +385,11 @@ export default function App() {
                   )}
                 </span>
               </div>
+              {keyboardMode && (
+                <button className="mouse-look-button" onClick={captureMouse}>
+                  Enable mouse look ↗
+                </button>
+              )}
               <button
                 className="notebook-button"
                 onClick={() => open("notebook")}
@@ -331,7 +453,17 @@ export default function App() {
                     "Clear your evidence and interviews and start this case again?",
                   )
                 ) {
+                  resetInterviews();
                   setGame(freshGame());
+                  setIntroSeen(false);
+                  setEnterAtBank(false);
+                  setKeyboardMode(false);
+                  setCinematic(false);
+                  try {
+                    localStorage.removeItem(INTRO_SEEN_KEY);
+                  } catch {
+                    /* Reset still works in this tab. */
+                  }
                   setPanel(null);
                   setStarted(false);
                 }

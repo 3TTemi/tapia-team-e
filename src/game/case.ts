@@ -4,78 +4,78 @@ import type { Clue, Suspect } from "./types";
 export const suspects: Suspect[] = [
   {
     id: "alex",
-    name: "Alex",
-    role: "YOUR TEAMMATE",
+    name: "Milo",
+    role: "BANK JANITOR",
     color: "#ae9fff",
     position: [-4.3, 0, -1.6],
     opening:
-      "Sparky is missing? Okay. Okay. Before we panic… did you check the build logs?",
+      "Missing cash? I mop floors, detective. I kept to the lobby. Nobody needs to bother the manager about me.",
   },
   {
     id: "jordan",
-    name: "Jordan",
-    role: "THE RIVAL",
+    name: "Boone",
+    role: "SECURITY GUARD",
     color: "#f2ab72",
     position: [4.3, 0, -1.6],
     opening:
-      "Rough timing. Thirteen minutes before judging? I was at the snack table. Mostly.",
+      "I watched the cameras all evening. Nothing unusual. This bank is secure. Was secure.",
   },
   {
     id: "sam",
-    name: "Sam",
-    role: "EVENT VOLUNTEER",
+    name: "Ellis",
+    role: "REGULAR CUSTOMER · CONTRACTOR",
     color: "#83d8b1",
     position: [3.4, 0, -6.8],
     opening:
-      "Everything is under control. Please keep the aisles clear. And… don’t touch any loose batteries.",
+      "Terrible business. I only came to collect my repair invoice. I stayed in the public lobby, but I’m happy to help.",
   },
 ];
 
 export const clues: Clue[] = [
   {
     id: "dock",
-    title: "Empty charging dock",
-    category: "SCENE OF THE DISAPPEARANCE",
+    title: "Empty cash-transfer tray",
+    category: "ROBBERY SCENE",
     position: [-3.6, 1.15, -4.5],
     icon: "◇",
     description:
-      "Sparky’s dock is empty. The charging cable was carefully unplugged, not torn out. There’s a faint scorch mark beneath the battery connector.",
+      "18:04 — a courier collected the bank’s sealed cash bag. The tray and locks are intact. The pickup was marked ‘security authorized,’ but the bank ordered no collection tonight.",
   },
   {
     id: "log",
-    title: "Build failure log",
-    category: "DIGITAL EVIDENCE",
+    title: "Security inactivity log",
+    category: "SECURITY RECORD",
     position: [-5.3, 1.4, -4.5],
     icon: ">_",
     description:
-      "23:39 — deploy failed. User: alex.\n23:40 — dashboard message changed to “DEMO CANCELLED.”\nThe message predates Sparky’s disappearance.",
+      "17:55–18:06 — no camera checks or patrol check-ins from Boone.\nThe security terminal stayed signed in and unlocked.\nBoone claims he watched the cameras the whole time.",
   },
   {
     id: "photo",
-    title: "A suspicious snapshot",
-    category: "WITNESS EVIDENCE",
+    title: "Manager’s office photo",
+    category: "CAMERA STILL",
     position: [5.2, 1.15, -4.5],
     icon: "▣",
     description:
-      "A print from Jordan’s instant camera shows your prototype design. In the background, a green-sleeved volunteer pushes a cart. A familiar square antenna sticks out from under a jacket.",
+      "17:59 — the office camera caught Milo putting the manager’s gift bottle into his cleaning cart. He said he never left the lobby. The office door looks onto the staff corridor.",
   },
   {
     id: "badge",
-    title: "Repair-room access slip",
+    title: "Staff-corridor access record",
     category: "ACCESS RECORD",
     position: [0, 1.1, -7.8],
     icon: "≡",
     description:
-      "23:44 — repair room opened.\nBadge V-03: Sam, event volunteer.\nEquipment intake: one small electronic device.",
+      "18:01 — staff corridor opened with contractor pass E-17: Ellis.\nThe corridor leads to the security desk.\nEllis claimed to have stayed in the public lobby.",
   },
   {
     id: "heat",
-    title: "Battery alert",
-    category: "HARDWARE TELEMETRY",
+    title: "Courier pickup instructions",
+    category: "DISPATCH RECORD",
     position: [-5.8, 1.3, 2.2],
     icon: "ϟ",
     description:
-      "23:42 — SPARKY / battery temperature critical.\nSafety instruction: disconnect charger and move device to the repair station.\nAlert acknowledged by volunteer V-03.",
+      "18:02 — bank security terminal: unscheduled cash pickup.\nBooked under Ellis’s verified contractor account E-17.\nRunner instruction: ‘Collect the sealed cash bag at 18:04. Bring it to me behind the bank.’",
   },
 ];
 
