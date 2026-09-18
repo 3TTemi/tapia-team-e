@@ -1,4 +1,4 @@
-# Build plan: Last Commit
+# Build plan: Capital Punishment
 
 ## Product promise
 

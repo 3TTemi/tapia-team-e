@@ -17,7 +17,7 @@ export default function OpeningOverlay({
       <div className="opening-letterbox opening-letterbox-top" />
       <div className="opening-letterbox opening-letterbox-bottom" />
       <div className="opening-location">
-        <span className="opening-live-dot" /> LAST COMMIT{" "}
+        <span className="opening-live-dot" /> CAPITAL PUNISHMENT{" "}
         <span>/ PROLOGUE</span>
       </div>
       <button className="opening-skip" onClick={onSkip}>

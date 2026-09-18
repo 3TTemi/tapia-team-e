@@ -367,8 +367,8 @@ export default function App() {
       <div className="vignette" />
       {!cinematic && !verdict && (
         <header className="top-bar">
-          <a className="wordmark" href="/" aria-label="Last Commit home">
-            <span className="logo-mark">LC</span> LAST COMMIT
+          <a className="wordmark" href="/" aria-label="Capital Punishment home">
+            <span className="logo-mark">CP</span> CAPITAL PUNISHMENT
             <span className="wordmark-divider">/</span>
             <span className="wordmark-sub">CASE 001</span>
           </a>

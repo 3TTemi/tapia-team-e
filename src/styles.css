@@ -203,7 +203,7 @@ kbd {
   max-width: 470px;
 }
 .brief h1 {
-  font-size: clamp(68px, 7.5vw, 112px);
+  font-size: clamp(36px, 5vw, 64px);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.035em;
@@ -1033,7 +1033,7 @@ kbd {
     transform: translateY(-40%);
   }
   .brief h1 {
-    font-size: clamp(52px, 10vw, 78px);
+    font-size: clamp(28px, 7vw, 60px);
   }
   .brief-copy {
     font-size: 12px;
@@ -1094,7 +1094,7 @@ kbd {
 }
 @media (max-height: 740px) {
   .brief h1 {
-    font-size: clamp(52px, 10vw, 76px);
+    font-size: clamp(28px, 5vw, 56px);
     margin: 20px 0;
   }
   .brief-copy {

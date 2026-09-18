@@ -35,9 +35,9 @@ export function CaseBrief({
         <span className="status-dot" /> AN AFTER-HOURS MYSTERY
       </div>
       <h1>
-        LAST
+        CAPITAL
         <br />
-        <span>COMMIT.</span>
+        <span>PUNISHMENT.</span>
       </h1>
       <p className="brief-lead">
         One bank robbery.
