@@ -8,6 +8,7 @@ import {
   requestInterview,
   requestInterviewStream,
 } from "../game/chat";
+import { synthesizeSpeech } from "../game/voices";
 import type {
   Clue,
   ClueId,
@@ -209,6 +210,13 @@ export function DialogueHud({
       );
       setNotice(reply.notice ?? "");
       setInput("");
+      try {
+        const audio = await synthesizeSpeech(reply.text, suspect.id);
+        const player = new Audio(audio.url);
+        player.play().catch(() => {});
+      } catch {
+        // Voice playback is optional and must not block the interview.
+      }
     } catch (err) {
       setError(
         err instanceof Error
