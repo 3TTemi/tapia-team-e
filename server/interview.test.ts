@@ -86,3 +86,40 @@ test("store persists isolated sessions and serializes concurrent turns", async (
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("Spanish witness returns paired captions and persists them separately", async () => {
+  const memory = newSession().characters.lucia;
+  let calls = 0;
+  const result = await interview(
+    { suspectId: "lucia", message: "What did you see?" },
+    memory,
+    config,
+    async (_c, system, input, schema) => {
+      if (++calls === 1) {
+        assert.match(system, /Spanish/);
+        assert.ok(JSON.stringify(schema).includes("translation"));
+        return { reply: "Vi a un mensajero.", translation: "I saw a courier." };
+      }
+      assert.match(input, /I saw a courier/);
+      return { supported: true };
+    },
+  );
+  assert.equal(result.translation, "I saw a courier.");
+  assert.equal(memory.history[1].translation, result.translation);
+});
+test("missing or rejected translation gives matched authored Spanish and English", async () => {
+  for (const reply of [
+    { reply: "Texto sin traducción" },
+    { reply: "Inventado", translation: "Invented" },
+  ]) {
+    let calls = 0;
+    const result = await interview(
+      { suspectId: "lucia", message: "Who did it?" },
+      newSession().characters.lucia,
+      config,
+      async () => (++calls === 1 ? reply : { supported: false }),
+    );
+    assert.match(result.text, /Vi a un mensajero/);
+    assert.match(result.translation!, /I saw a courier/);
+  }
+});

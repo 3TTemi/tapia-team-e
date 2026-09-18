@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { clues, suspects } from "../game/case";
+import { clues, characters } from "../game/case";
 import type { SaveGame, TargetId } from "../game/types";
 import "./investigation-board.css";
 
@@ -8,7 +8,9 @@ const STORAGE_KEY = "last-commit-board-v1";
 export function loadBoardLinks(): BoardLink[] {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    const ids = new Set<string>([...suspects, ...clues].map((item) => item.id));
+    const ids = new Set<string>(
+      [...characters, ...clues].map((item) => item.id),
+    );
     const seen = new Set<string>();
     if (!Array.isArray(raw)) return [];
     return raw.filter((link): link is BoardLink => {
@@ -65,13 +67,13 @@ export default function InvestigationBoard({
   );
   const evidence = clues.filter((clue) => game.clues.includes(clue.id));
   const visibleIds = new Set<TargetId>(
-    [...suspects, ...evidence].map((item) => item.id),
+    [...characters, ...evidence].map((item) => item.id),
   );
   const visibleLinks = links.filter(
     ([a, b]) => visibleIds.has(a) && visibleIds.has(b),
   );
   const name = (id: TargetId) =>
-    suspects.find((s) => s.id === id)?.name ??
+    characters.find((s) => s.id === id)?.name ??
     clues.find((c) => c.id === id)?.title ??
     id;
   useLayoutEffect(() => {
@@ -225,12 +227,12 @@ export default function InvestigationBoard({
           <div className="ib-section-label">
             PEOPLE OF INTEREST{" "}
             <span>
-              {suspects.filter((s) => game.histories[s.id].length > 0).length} /
-              3 interviewed
+              {characters.filter((s) => game.histories[s.id].length > 0).length}{" "}
+              / 3 interviewed
             </span>
           </div>
           <div className="ib-witnesses">
-            {suspects.map((suspect) => {
+            {characters.map((suspect) => {
               const history = game.histories[suspect.id];
               const lastReply = [...history]
                 .reverse()

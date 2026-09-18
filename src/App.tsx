@@ -1,7 +1,7 @@
 import { resetInterviews } from "./game/chat";
 import { useCallback, useEffect, useRef, useState } from "react";
 import World from "./world/World";
-import { clues, suspects } from "./game/case";
+import { clues, suspects, characters } from "./game/case";
 import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
 import { submitCase, type CaseVerdict } from "./game/submission";
@@ -160,7 +160,7 @@ export default function App() {
   }, [canContinue, captureMouse, startOpening]);
   const open = useCallback((next: Panel) => {
     document.exitPointerLock?.();
-    if (suspects.some((s) => s.id === next)) {
+    if (characters.some((s) => s.id === next)) {
       setTalkingTo(next as SuspectId);
       setPanel(null);
       setThinking(false);
@@ -262,7 +262,7 @@ export default function App() {
       ...prev,
       histories: { ...prev.histories, [id]: messages },
     }));
-  const talkingSuspect = suspects.find((s) => s.id === talkingTo);
+  const talkingSuspect = characters.find((s) => s.id === talkingTo);
   const lastReply = talkingTo
     ? [...game.histories[talkingTo]].reverse().find((m) => m.role === "suspect")
         ?.text
@@ -286,7 +286,7 @@ export default function App() {
       ? game.solved
         ? "Final case report"
         : "Submit case"
-      : (suspects.find((s) => s.id === target)?.name ??
+      : (characters.find((s) => s.id === target)?.name ??
         clues.find((c) => c.id === target)?.title);
   return (
     <main className="game-shell">
@@ -371,8 +371,8 @@ export default function App() {
             <p>
               {game.clues.length} / {clues.length} clues collected{" "}
               <span>·</span>{" "}
-              {Object.values(game.histories).filter((h) => h.length > 0).length}{" "}
-              / 3 suspects interviewed
+              {suspects.filter((s) => game.histories[s.id].length > 0).length} /
+              3 suspects interviewed
             </p>
           </aside>
           {!panel && !talkingTo && (locked || keyboardMode) && (
@@ -385,7 +385,7 @@ export default function App() {
                     <span>
                       {target === "submission"
                         ? "Use"
-                        : suspects.some((s) => s.id === target)
+                        : characters.some((s) => s.id === target)
                           ? "Talk to"
                           : "Inspect"}{" "}
                       <strong>{targetName}</strong>

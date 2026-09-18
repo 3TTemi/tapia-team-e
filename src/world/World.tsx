@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { Vector3, type Group } from "three";
-import { clues, obstacles, suspects } from "../game/case";
+import { clues, obstacles, characters } from "../game/case";
 import type { ClueId, Position, SuspectId, TargetId } from "../game/types";
 import CityEnvironment from "./CityEnvironment";
 import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
@@ -123,7 +123,7 @@ function Hacker({
       speaking={speaking}
       facing={Boolean(line)}
     >
-      {line ? (
+      {line && name !== "Lucía" ? (
         <group position={[0, 2.15, 0]}>
           <SpeechBubble name={name} text={line} thinking={thinking} />
         </group>
@@ -265,7 +265,7 @@ function Room({
         size={[0.15, 0.3, 0.15]}
         color="#b784a7"
       />
-      {suspects.map((s) => (
+      {characters.map((s) => (
         <Hacker
           key={s.id}
           {...s}
@@ -391,7 +391,7 @@ function Player({
       );
       const blocked = (x: number, z: number) =>
         isWorldBlocked(x, z, obstacles) ||
-        suspects.some(
+        characters.some(
           (s) => Math.hypot(x - s.position[0], z - s.position[2]) < 0.65,
         );
       movePlayer(
@@ -410,7 +410,7 @@ function Player({
     camera.getWorldDirection(direction.current);
     let next: TargetId | null = null;
     let closest = 3.1;
-    for (const object of [...suspects, ...clues, caseStation]) {
+    for (const object of [...characters, ...clues, caseStation]) {
       const p = object.position;
       deltaVector.current
         .set(p[0], "role" in object ? 1.5 : p[1], p[2])
