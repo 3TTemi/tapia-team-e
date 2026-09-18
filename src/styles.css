@@ -228,6 +228,32 @@ kbd {
 .start-button {
   min-width: 292px;
 }
+.demo-start-button {
+  margin-top: 14px;
+  min-width: 292px;
+  background: transparent;
+  border: 1px solid #c5daab55;
+  border-radius: 10px;
+  color: #dce8c8;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 22px;
+  text-align: left;
+}
+.demo-start-button span {
+  color: #879983;
+  display: block;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.8px;
+  margin-top: 6px;
+}
+.demo-start-button:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
 .brief-controls {
   display: flex;
   flex-wrap: wrap;
@@ -590,6 +616,74 @@ kbd {
   font-size: 20px;
   line-height: 1;
   animation: thinking-dots 1.1s steps(4, end) infinite;
+}
+.speech-bubble.streaming p::after {
+  content: "▋";
+  animation: stream-cursor 0.85s step-end infinite;
+  color: #6f7d68;
+  margin-left: 2px;
+}
+@keyframes stream-cursor {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.demo-guide {
+  background: #101812ee;
+  border: 1px solid #c5daab44;
+  border-radius: 12px;
+  bottom: 96px;
+  box-shadow: 0 18px 50px #0008;
+  left: 24px;
+  max-width: min(360px, calc(100vw - 48px));
+  padding: 16px 18px 18px;
+  position: fixed;
+  z-index: 12;
+}
+.demo-guide-top {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.demo-guide-kicker {
+  color: #a3b09e;
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+}
+.demo-guide-exit {
+  background: transparent;
+  border: 1px solid #c5daab44;
+  border-radius: 6px;
+  color: #dce8c8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px 10px;
+}
+.demo-guide strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.demo-guide p {
+  color: #bfcca9;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+.dialogue-hud-demo {
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.chip-suggested {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 1px #d7f08a33;
 }
 @keyframes thinking-dots {
   0% {

@@ -1,4 +1,5 @@
 import { resetInterviews } from "./game/chat";
+import { computeDemoStep } from "./game/demo";
 import { useCallback, useEffect, useRef, useState } from "react";
 import World from "./world/World";
 import { clues, suspects } from "./game/case";
@@ -6,6 +7,7 @@ import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
 import { submitCase, type CaseVerdict } from "./game/submission";
 import CaseSubmission, { CaseRetry, VerdictOverlay } from "./ui/CaseSubmission";
+import DemoGuide from "./ui/DemoGuide";
 import InvestigationBoard, {
   loadBoardLinks,
   persistBoardLinks,
@@ -59,6 +61,9 @@ export default function App() {
   const [talkingTo, setTalkingTo] = useState<SuspectId | null>(null);
   const [thinking, setThinking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [streamReply, setStreamReply] = useState<string | null>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [error, setError] = useState("");
   const [introSeen, setIntroSeen] = useState(hasSeenOpening);
   const [cinematic, setCinematic] = useState(false);
@@ -146,6 +151,23 @@ export default function App() {
     setIntroShot("cafe");
     setCinematic(true);
   }, []);
+  const startDemo = useCallback(() => {
+    resetInterviews();
+    setGame(freshGame());
+    updateBoardLinks([]);
+    setDemoMode(true);
+    setVerdict(null);
+    setFailedSuspect(null);
+    setIntroSeen(false);
+    setEnterAtBank(false);
+    setKeyboardMode(false);
+    try {
+      localStorage.removeItem(INTRO_SEEN_KEY);
+    } catch {
+      /* Demo still runs in this tab. */
+    }
+    startOpening();
+  }, [startOpening]);
   const startGame = useCallback(() => {
     if (canContinue) {
       setError("");
@@ -273,13 +295,19 @@ export default function App() {
       return;
     }
     setSpeaking(true);
-    if (thinking) return;
+    if (thinking || streaming) return;
     const timer = window.setTimeout(() => setSpeaking(false), 4200);
     return () => window.clearTimeout(timer);
-  }, [talkingTo, thinking, lastReply]);
+  }, [talkingTo, thinking, streaming, lastReply]);
   const bubbleText = talkingSuspect
-    ? (lastReply ?? talkingSuspect.opening)
+    ? (streamReply ?? lastReply ?? talkingSuspect.opening)
     : null;
+  const demoStep = computeDemoStep({
+    demoMode,
+    cinematic,
+    started,
+    game,
+  });
   const clue = clues.find((c) => c.id === panel);
   const targetName =
     target === "submission"
@@ -306,6 +334,7 @@ export default function App() {
           speaking={speaking}
           bubbleText={bubbleText}
           thinking={thinking}
+          streaming={streaming}
           onTarget={setTarget}
           onLock={onLock}
           cinematic={cinematic}
@@ -340,6 +369,7 @@ export default function App() {
             resume={startGame}
             hasSave={canContinue}
             onWatchOpening={startOpening}
+            onStartDemo={startDemo}
           />
           <div className="scene-caption">
             <span className="eyebrow">THE SCENE</span>
@@ -355,6 +385,9 @@ export default function App() {
         <OpeningOverlay shot={introShot} onSkip={() => setSkipIntro(true)} />
       )}
       {verdict && <VerdictOverlay verdict={verdict} />}
+      {demoMode && demoStep && !verdict && (
+        <DemoGuide step={demoStep} onExit={() => setDemoMode(false)} />
+      )}
       {started && !cinematic && !verdict && (
         <>
           <aside className="objective">
@@ -428,7 +461,7 @@ export default function App() {
               </section>
             </div>
           )}
-          {!panel && !talkingTo && (
+          {!panel && !talkingTo && !demoMode && (
             <button className="board-launcher" onClick={() => open("board")}>
               <kbd>B</kbd> Investigation board <span aria-hidden="true">⌁</span>
             </button>
@@ -472,9 +505,12 @@ export default function App() {
               key={talkingSuspect.id}
               suspect={talkingSuspect}
               game={game}
+              demoMode={demoMode}
               onMessages={saveMessages}
               onClose={resume}
               onThinking={setThinking}
+              onStreamText={setStreamReply}
+              onStreaming={setStreaming}
             />
           )}
         </>
@@ -539,6 +575,7 @@ export default function App() {
                   setCinematic(false);
                   setVerdict(null);
                   setFailedSuspect(null);
+                  setDemoMode(false);
                   try {
                     localStorage.removeItem(INTRO_SEEN_KEY);
                   } catch {
