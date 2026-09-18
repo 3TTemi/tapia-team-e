@@ -49,9 +49,9 @@ function Hand({ side, skin }: { side: number; skin: string }) {
 }
 
 function Workwear({ name, trim }: { name: string; trim: string }) {
-  const guard = name === "Boone";
-  const janitor = name === "Milo";
-  const contractor = name === "Ellis";
+  const guard = name === "Jordan";
+  const janitor = name === "Alex";
+  const contractor = name === "Sam";
   return (
     <>
       {/* A split collar leaves the neck visible and follows the shoulder line. */}
@@ -183,26 +183,26 @@ export default function StylizedCharacter({
   const mouth = useRef<Group>(null);
   const legs = useRef<(Group | null)[]>([]);
   const skin =
-    name === "Milo" ? "#946544" : name === "Boone" ? "#c3946f" : "#c2a07a";
+    name === "Alex" ? "#946544" : name === "Jordan" ? "#c3946f" : "#c2a07a";
   const shirt =
-    name === "Milo"
+    name === "Alex"
       ? "#637b70"
-      : name === "Boone"
+      : name === "Jordan"
         ? "#3b5363"
-        : name === "Ellis"
+        : name === "Sam"
           ? "#8c8168"
           : color;
   const trim =
-    name === "Milo"
+    name === "Alex"
       ? "#455c55"
-      : name === "Boone"
+      : name === "Jordan"
         ? "#293e4b"
-        : name === "Ellis"
+        : name === "Sam"
           ? "#655f50"
           : "#b8b29d";
-  const trousers = name === "Ellis" ? "#424b49" : "#293d48";
+  const trousers = name === "Sam" ? "#424b49" : "#293d48";
   const hair =
-    name === "Ellis" ? "#605247" : name === "Milo" ? "#302f2b" : "#383b39";
+    name === "Sam" ? "#605247" : name === "Alex" ? "#302f2b" : "#383b39";
   useFrame(({ camera, clock }) => {
     const time = animationTime?.current ?? clock.elapsedTime;
     const t = time + position[0];
@@ -390,7 +390,7 @@ export default function StylizedCharacter({
           </mesh>
           <mesh
             position={[0, 0.165, -0.04]}
-            scale={[0.242, name === "Milo" ? 0.145 : 0.165, 0.222]}
+            scale={[0.242, name === "Alex" ? 0.145 : 0.165, 0.222]}
             castShadow
           >
             <sphereGeometry args={[1, 18, 12]} />
@@ -407,7 +407,7 @@ export default function StylizedCharacter({
               <meshStandardMaterial color={skin} roughness={0.85} />
             </mesh>
           ))}
-          {name === "Ellis" && (
+          {name === "Sam" && (
             <mesh
               position={[0.08, 0.215, 0.035]}
               rotation={[0, 0, -0.2]}

@@ -424,15 +424,15 @@ export function Ending({ onClose }: { onClose: () => void }) {
       <h2>
         Everyone hid something.
         <br />
-        <span>Ellis planned the robbery.</span>
+        <span>Sam planned the robbery.</span>
       </h2>
       <p>
-        Milo stole the manager’s liquor. Boone slept through his shift. Ellis
+        Alex stole the manager’s liquor. Jordan slept through his shift. Sam
         used the unlocked security terminal to send a courier for the bank’s
         cash.
       </p>
       <div className="hint-box">
-        The staff-corridor record places Ellis inside. The pickup instructions
+        The staff-corridor record places Sam inside. The pickup instructions
         connect his contractor ID to the runner. Two records. One mastermind.
       </div>
       <button className="primary" onClick={onClose}>

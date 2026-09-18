@@ -3,9 +3,11 @@ import { ProviderError, replySchema } from "../server/gemini";
 import { createGenerator } from "../server/providers";
 const env = loadEnv("development", process.cwd(), "");
 const config = {
-  apiKey: process.argv.includes("--openai")
-    ? ""
-    : process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || "",
+  apiKey:
+    process.argv.includes("--openai") ||
+    (process.env.AI_PROVIDER || env.AI_PROVIDER || "openai") !== "gemini"
+      ? ""
+      : process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || "",
   model: process.env.GEMINI_MODEL || env.GEMINI_MODEL || "gemini-3.8-flash",
   openaiApiKey: process.env.OPENAI_API_KEY || env.OPENAI_API_KEY || "",
   openaiModel: process.env.OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4.1-mini",

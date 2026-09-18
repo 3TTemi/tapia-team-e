@@ -1,3 +1,4 @@
+import { currentCharacterNames } from "../src/game/names";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -38,6 +39,10 @@ export function createStore(directory = path.resolve(".data/interviews")) {
           await readFile(path.join(directory, `${id}.json`), "utf8"),
         );
         if (value.version !== 2) return newSession();
+        for (const character of Object.values((value as Session).characters)) {
+          for (const message of character.history)
+            message.text = currentCharacterNames(message.text);
+        }
         return value;
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT")

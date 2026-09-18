@@ -59,6 +59,6 @@ Click **Enter the café** or **Resume investigation** to capture the mouse. If t
 
 ## OpenAI backup
 
-Add `OPENAI_API_KEY` to your local `.env` and restart Vite. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. Gemini is tried first; provider/network/structured-response failures switch to OpenAI for that call and the remaining fact check in the same interview. With only an OpenAI key, interviews use OpenAI directly. Both providers unavailable means a labeled scripted response. Each provider request times out after 8 seconds; an interview can make up to three requests. The HUD reports OpenAI whenever it handled either generation or verification. Keys never enter browser code.
+Add `OPENAI_API_KEY` to your local `.env` and restart Vite. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. OpenAI is now the default and skips Gemini completely. Set `AI_PROVIDER=gemini` to restore Gemini-first routing with OpenAI backup on failures. With only an OpenAI key, interviews use OpenAI directly. Both providers unavailable means a labeled scripted response. Each provider request times out after 8 seconds; an interview can make up to three requests. The HUD reports OpenAI whenever it handled either generation or verification. Keys never enter browser code.
 
 `npm run ai:check` checks the configured chain; `npm run ai:check -- --openai` tests the backup directly.

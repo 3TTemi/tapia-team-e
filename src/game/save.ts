@@ -1,3 +1,4 @@
+import { currentCharacterNames } from "./names";
 import type { SaveGame } from "./types";
 import { clues, suspects } from "./case";
 
@@ -31,6 +32,10 @@ export function loadGame(): SaveGame {
         )
       )
         return freshGame();
+    }
+    for (const history of Object.values((raw as SaveGame).histories)) {
+      for (const message of history)
+        message.text = currentCharacterNames(message.text);
     }
     return raw as SaveGame;
   } catch {

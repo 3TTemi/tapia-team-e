@@ -21,7 +21,7 @@ export function scriptedReply({
 
   if (suspectId === "alex") {
     if (shown.has("photo"))
-      return "Fine. I stole the manager’s gift liquor. From his doorway, I saw Ellis ditch a courier jacket by the staff corridor at 18:03. I kept quiet to hide my own theft. I never touched the cash.";
+      return "Fine. I stole the manager’s gift liquor. From his doorway, I saw Sam ditch a courier jacket by the staff corridor at 18:03. I kept quiet to hide my own theft. I never touched the cash.";
     if (presentedClue)
       return "I clean here. I don’t handle cash or security records. If you’ve got something showing where I was, let’s see it.";
     return /office|bottle|liquor|manager|steal/i.test(message)
@@ -40,7 +40,7 @@ export function scriptedReply({
   }
 
   if (shown.has("badge") && shown.has("heat"))
-    return "I planned the robbery. Repair visits taught me Boone’s routine. I used his unlocked terminal to send a runner for the cash. The courier jacket got me past a glance; I ditched it afterward. The runner thought it was a legitimate pickup.";
+    return "I planned the robbery. Repair visits taught me Jordan’s routine. I used his unlocked terminal to send a runner for the cash. The courier jacket got me past a glance; I ditched it afterward. The runner thought it was a legitimate pickup.";
   if (shown.has("badge"))
     return "All right, I entered the staff corridor. A maintenance check. I should have said so. Being near the security desk doesn’t prove I ordered a cash pickup.";
   if (shown.has("heat"))
