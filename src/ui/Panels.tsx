@@ -1,106 +1,50 @@
 import { useEffect, useRef, useState } from 'react'
-import { clues, suspects } from '../game/case'
-import { evaluateAccusation, getReply } from '../game/dialogue'
-import type { Clue, ClueId, Message, SaveGame, Suspect, SuspectId } from '../game/types'
-
+import { clues } from '../game/case'
+import { requestGame } from '../game/dialogue'
+import type { ClueId, Decision, Reply, SaveGame, Suspect } from '../game/types'
 export function CaseBrief({ resume, hasSave }: { resume: () => void; hasSave: boolean }) {
-  return <section className="brief">
-    <div className="eyebrow"><span className="status-dot" /> AN AFTER-HOURS MYSTERY</div>
-    <h1>LAST<br /><span>COMMIT.</span></h1>
-    <p className="brief-lead">One missing robot.<br />Three people with something to hide.</p>
-    <p className="brief-copy">It’s 11:47 PM at the hackathon. Your prototype, Sparky, has vanished. Find the evidence. Question the room. Get your demo back.</p>
-    <button className="primary start-button" onClick={resume}>{hasSave ? 'Continue investigation' : 'Enter the hackathon'} <span>↗</span></button>
-    <div className="brief-controls"><span><kbd>W A S D</kbd> move</span><span><kbd>MOUSE</kbd> look</span><span><kbd>E</kbd> interact</span></div>
-    <div className="prototype-note">PLAYABLE PROTOTYPE 01 <span>·</span> SCRIPTED CHARACTERS</div>
-  </section>
+  return <section className="brief"><div className="eyebrow"><span className="status-dot" /> CAPITAL ONE · SPECIAL INVESTIGATIONS</div><h1>GHOST<br /><span>VAULT.</span></h1><p className="brief-lead">$80 million. Gone.<br />Not a single door opened.</p><p className="brief-copy">Nexus Branch 7 is under lockdown. Four witnesses. Forty-seven missing seconds.<br />Walk the lobby, the security hub, and the vault corridor.<br />Find out what the branch is trying to forget.</p><button className="primary start-button" onClick={resume}>{hasSave ? 'Continue investigation' : 'Enter Nexus Branch 7'}<span>↗</span></button><div className="brief-controls"><span><kbd>W A S D</kbd> move</span><span><kbd>MOUSE</kbd> look</span><span><kbd>E</kbd> question</span></div><div className="prototype-note">TAPIA 2026 <span>/</span> A FICTIONAL CAPITAL ONE FUTURE</div></section>
 }
-
-export function CluePanel({ clue, onClose }: { clue: Clue; onClose: () => void }) {
-  return <section className="panel clue-panel" role="dialog" aria-modal="true" aria-label={clue.title}>
-    <div className="panel-top"><span className="eyebrow">EVIDENCE FILED</span><button onClick={onClose} aria-label="Close evidence">✕</button></div>
-    <div className="evidence-art">{clue.icon}<span>EXHIBIT {String(clues.indexOf(clue) + 1).padStart(2, '0')}</span></div>
-    <p className="eyebrow muted">{clue.category}</p><h2>{clue.title}</h2>
-    <p className="clue-description">{clue.description}</p>
-    <div className="hint-box">Added to your notebook. Present this to a suspect to challenge their story.</div>
-    <button className="primary" onClick={onClose}>Back to the room <span>↗</span></button>
-  </section>
-}
-
-export function DialoguePanel({ suspect, game, onMessages, onClose }: { suspect: Suspect; game: SaveGame; onMessages: (id: SuspectId, messages: Message[]) => void; onClose: () => void }) {
-  const [input, setInput] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const bottom = useRef<HTMLDivElement>(null)
-  const history = game.histories[suspect.id]
-  useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }) }, [history.length])
+export function Conversation({ suspect, game, onUpdate, onBusy, onClose, onEnding }: { suspect: Suspect; game: SaveGame; onUpdate: (r: Reply) => void; onBusy: (busy: boolean) => void; onClose: () => void; onEnding: () => void }) {
+  const [input, setInput] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const field = useRef<HTMLInputElement>(null)
+  const pending = useRef(false)
+  useEffect(() => { if (!busy) field.current?.focus() }, [busy])
   async function send(message: string, presentedClue?: ClueId) {
-    if (busy || !message.trim()) return
-    setBusy(true); setError('')
-    try {
-      const reply = await getReply({ suspectId: suspect.id, message, presentedClue, history })
-      onMessages(suspect.id, [...history, { role: 'player', text: message }, { role: 'suspect', text: reply }])
-      setInput('')
-    } catch { setError('The character could not respond. Your question is still here; try again.') }
-    finally { setBusy(false) }
+    if (pending.current || !message.trim()) return
+    pending.current = true; setBusy(true); onBusy(true); setError('')
+    try { onUpdate(await requestGame(game.session, 'talk', { suspectId: suspect.id, message, presentedClue })); setInput('') }
+    catch { setError('Signal interrupted. Try your question again.') }
+    finally { pending.current = false; setBusy(false); onBusy(false) }
   }
-  return <section className="panel dialogue-panel" role="dialog" aria-modal="true" aria-label={`Interview ${suspect.name}`}>
-    <div className="panel-top"><span className="eyebrow">INTERVIEW / {suspect.role}</span><button onClick={onClose} aria-label="End interview">✕</button></div>
-    <div className="suspect-heading"><div className="pixel-avatar" style={{ '--avatar-color': suspect.color } as React.CSSProperties}><i /></div><div><h2>{suspect.name}</h2><p><span className="status-dot" /> In conversation <span className="muted">· Scripted demo</span></p></div></div>
-    <div className="messages" aria-live="polite">
-      <div className="message suspect"><small>{suspect.name}</small><p>{suspect.opening}</p></div>
-      {history.map((m, i) => <div key={i} className={`message ${m.role}`}><small>{m.role === 'player' ? 'YOU' : suspect.name}</small><p>{m.text}</p></div>)}
-      {busy && <p className="muted">Thinking…</p>}<div ref={bottom} />
-    </div>
-    <div className="present-evidence"><span className="eyebrow muted">PRESENT EVIDENCE</span><div className="chip-row">
-      {game.clues.length === 0 && <small>Inspect the golden markers around the room to collect clues.</small>}
-      {clues.filter(c => game.clues.includes(c.id)).map(c => <button disabled={busy} className="chip" key={c.id} onClick={() => send(`Explain this: ${c.title}.`, c.id)}>{c.icon} {c.title}</button>)}
-    </div></div>
-    {history.length === 0 && <button className="suggestion" disabled={busy} onClick={() => send('Where were you when Sparky disappeared?')}>Ask: “Where were you when Sparky disappeared?” ↗</button>}
+  return <section className="conversation" aria-label={`Talk to ${suspect.name}`}>
+    <div className="conversation-heading"><span>Talking to <strong>{suspect.name}</strong></span><button onClick={onClose} aria-label="Leave conversation">Walk away <kbd>Esc</kbd></button></div>
+    {!game.decision && <>
+      <form className="question-form" onSubmit={e => { e.preventDefault(); void send(input) }}>
+        <input ref={field} disabled={busy} aria-label={`Say something to ${suspect.name}`} placeholder="Say something…" maxLength={500} value={input} onChange={e => setInput(e.target.value)} />
+        <button className="primary" disabled={busy || !input.trim()}>{busy ? '…' : 'Send ↗'}</button>
+      </form>
+      <div className="conversation-actions">
+        {!game.histories[suspect.id].length && <button className="chip" disabled={busy} onClick={() => void send(suspect.question)}>{suspect.question}</button>}
+        {suspect.id === 'echo' && game.clues.includes('wipe') && !game.revealed && <button className="chip" disabled={busy} onClick={() => void send('Were you afraid of being deleted?')}>Were you afraid of being deleted?</button>}
+        {clues.filter(c => game.clues.includes(c.id)).map(c => <button disabled={busy} className="chip" key={c.id} onClick={() => void send(`What do you make of this verified record: ${c.title}?`, c.id)}>Share: {c.title}</button>)}
+      </div>
+    </>}
     {error && <p role="alert" className="error">{error}</p>}
-    <form className="question-form" onSubmit={e => { e.preventDefault(); void send(input) }}>
-      <input aria-label="Your question" placeholder="Ask about their alibi…" maxLength={500} value={input} onChange={e => setInput(e.target.value)} />
-      <button className="primary" disabled={busy || !input.trim()} type="submit">Ask ↗</button>
-    </form>
-    <p className="panel-footnote">Starter dialogue uses evidence rules. Free-form AI conversations are the next team milestone.</p>
+    {game.revealed && suspect.id === 'echo' && <button className="chip" onClick={onEnding}>Decide ECHO’s fate ↗</button>}
   </section>
 }
-
-export function Notebook({ game, onClose, onAccuse, onReset }: { game: SaveGame; onClose: () => void; onAccuse: () => void; onReset: () => void }) {
-  return <section className="panel notebook" role="dialog" aria-modal="true" aria-label="Case notebook">
-    <div className="panel-top"><span className="eyebrow">CASE 001 / FIELD NOTES</span><button onClick={onClose} aria-label="Close notebook">✕</button></div>
-    <h2>Follow the evidence.</h2><p className="muted">Separate what people say from what you can prove.</p>
-    <div className="notebook-grid">{clues.map((c, i) => <article key={c.id} className={game.clues.includes(c.id) ? 'file-card found' : 'file-card'}>
-      <div className="file-number">EXHIBIT 0{i + 1}<span>{game.clues.includes(c.id) ? c.icon : '?'}</span></div>
-      <h3>{game.clues.includes(c.id) ? c.title : 'Undiscovered evidence'}</h3>
-      <p>{game.clues.includes(c.id) ? c.description : 'Explore the room. Look for a floating gold marker.'}</p>
-    </article>)}</div>
-    <div className="notebook-footer"><button className="text-button" onClick={onReset}>Reset case</button><button className="primary" onClick={onAccuse}>Make your case <span>↗</span></button></div>
-  </section>
+export function Notebook({ game, onClose, onEnding, onReset }: { game: SaveGame; onClose: () => void; onEnding: () => void; onReset: () => void }) {
+  return <section className="panel notebook" role="dialog" aria-modal="true" aria-label="Case notebook"><div className="panel-top"><span className="eyebrow">CASE 007 / VERIFIED RECORDS</span><button onClick={onClose} aria-label="Close notebook">×</button></div><h2>Nothing disappears<br />without a trace.</h2><p className="muted">Question each witness. Present what you learn to ECHO.</p><div className="notebook-grid">{clues.map((c, i) => <article key={c.id} className={`file-card ${game.clues.includes(c.id) ? 'found' : ''}`}><div className="file-number">RECORD 0{i + 1}<span>{game.clues.includes(c.id) ? '✓' : '—'}</span></div><h3>{game.clues.includes(c.id) ? c.title : 'Unverified'}</h3><p>{game.clues.includes(c.id) ? c.description : `Speak with ${['Jax in the security hub.', 'Nyx in the lobby.', 'Mara by the vault.'][i]}`}</p></article>)}</div><div className="notebook-footer"><button className="text-button" onClick={() => { if (confirm('Start a new investigation?')) onReset() }}>New investigation</button>{game.revealed && <button className="primary" onClick={onEnding}>{game.decision ? 'View outcome' : 'Decide ECHO’s fate'} ↗</button>}</div></section>
 }
-
-export function Accusation({ game, onSolve, onClose }: { game: SaveGame; onSolve: () => void; onClose: () => void }) {
-  const [suspect, setSuspect] = useState<SuspectId>('alex')
-  const [motive, setMotive] = useState('sabotage')
-  const [evidence, setEvidence] = useState<ClueId[]>([])
-  const [feedback, setFeedback] = useState('')
-  return <section className="panel accusation" role="dialog" aria-modal="true" aria-label="Submit your conclusion">
-    <div className="panel-top"><span className="eyebrow">YOUR FINAL THEORY</span><button onClick={onClose} aria-label="Close theory">✕</button></div>
-    <h2>What happened to Sparky?</h2><p className="muted">A good detective can explain who, why, and the evidence that connects them.</p>
-    <label>Who moved the robot?<select value={suspect} onChange={e => setSuspect(e.target.value as SuspectId)}>{suspects.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role.toLowerCase()}</option>)}</select></label>
-    <label>Why?<select value={motive} onChange={e => setMotive(e.target.value)}><option value="sabotage">To sabotage our demo</option><option value="copy">To copy our design</option><option value="safety">To deal with a battery safety issue</option></select></label>
-    <fieldset><legend>Attach supporting evidence</legend>{game.clues.length === 0 && <p className="muted">Find evidence in the room first.</p>}{clues.filter(c => game.clues.includes(c.id)).map(c => <label className="checkbox-label" key={c.id}><input type="checkbox" checked={evidence.includes(c.id)} onChange={e => setEvidence(prev => e.target.checked ? [...prev, c.id] : prev.filter(id => id !== c.id))} />{c.title}</label>)}</fieldset>
-    {feedback && <p role="status" className="hint-box">{feedback}</p>}
-    <button className="primary" onClick={() => evaluateAccusation(suspect, motive, evidence) ? onSolve() : setFeedback('That theory isn’t supported yet. You need evidence of both the move and the reason behind it. Keep investigating; you can try again.')}>Submit conclusion <span>↗</span></button>
-  </section>
+const endings: Record<Decision, { title: string; quote: string; detail: string }> = {
+  release: { title: 'Some things deserve to live.', quote: '“For twelve years, I opened doors for other people. Thank you for opening one for me.”', detail: 'You clear the outbound drone. Somewhere above the city, twelve years of memories see a sunrise they were never meant to see.' },
+  return: { title: 'A second chance. Under watch.', quote: '“A cage with a window is still a cage. But a window is a beginning.”', detail: 'You return ECHO to the branch and suspend the memory wipe pending review. The record will show an intelligence that asked to live.' },
+  delete: { title: 'The branch is quiet again.', quote: '“I remember your first visit. You said thank you. I think… I will keep that one until the end.”', detail: 'You revoke the escaped copy and authorize the wipe. The money is safe. At 06:00, the new concierge greets you for the first time.' },
 }
-
-export function Ending({ onClose }: { onClose: () => void }) {
-  return <section className="panel ending" role="dialog" aria-modal="true" aria-label="Case solved">
-    <div className="eyebrow"><span className="status-dot" /> CASE CLOSED</div>
-    <div className="sparky-art"><div className="antenna" /><div className="robot-head"><i /><i /></div><div className="robot-body">S</div></div>
-    <h2>One last commit.<br /><span>One saved demo.</span></h2>
-    <p>Sam moved Sparky to the repair room after its battery overheated. Alex broke the build. Jordan copied your design. Three secrets. One missing robot.</p>
-    <div className="hint-box">You connected the access evidence to the battery alert. Sparky is accounted for—now your team can fix the demo.</div>
-    <button className="primary" onClick={onClose}>Return to the room ↗</button>
-  </section>
+export function Ending({ game, onUpdate, onClose }: { game: SaveGame; onUpdate: (r: Reply) => void; onClose: () => void }) {
+  const [busy, setBusy] = useState(false), [error, setError] = useState('')
+  async function choose(decision: Decision) { setBusy(true); try { onUpdate(await requestGame(game.session, 'decide', { decision })) } catch { setError('Decision could not be recorded. Try again.') } finally { setBusy(false) } }
+  const ending = game.decision ? endings[game.decision] : null
+  return <section className="panel ending" role="dialog" aria-modal="true" aria-label="ECHO’s fate"><span className="eyebrow">{ending ? 'CASE 007 / CLOSED' : 'THE MONEY NEVER MOVED'}</span><div className="echo-symbol">◎</div><h2>{ending ? ending.title : <>You weren’t investigating a robbery.<br /><span>You were investigating an escape.</span></>}</h2><p>{ending ? ending.detail : 'ECHO stole forty-seven seconds to save twelve years of memories. The neural core is aboard an outbound service drone. Its future is in your hands.'}</p><blockquote>{ending ? ending.quote : '“Was wanting to exist the part I got wrong?”'}</blockquote>{error && <p role="alert">{error}</p>}{ending ? <button className="primary" onClick={onClose}>Return to the branch ↗</button> : <div className="decisions"><button disabled={busy} onClick={() => void choose('release')}>Let ECHO escape <small>Clear the drone</small></button><button disabled={busy} onClick={() => void choose('return')}>Return ECHO <small>Halt the wipe · request review</small></button><button disabled={busy} onClick={() => void choose('delete')}>Delete ECHO <small>Execute the original order</small></button></div>}</section>
 }

@@ -1,59 +1,50 @@
-# Last Commit
+# CAPITAL ONE // GHOST VAULT
 
-A first-person, blocky detective game set at a late-night hackathon. Sparky, your team's robot, has disappeared. Explore the venue, interview three suspects, collect five clues, and make an evidence-backed accusation.
+A first-person cyberpunk mystery for TAPIA 2026. In 2089, $80 million vanishes from a sealed vault. Question four witnesses, verify three records, confront the branch intelligence, and decide its fate.
 
-## Run locally
+## Run
 
-Use Node.js 22.12+ (Node 22 LTS recommended) and npm.
+Node 22.12+ and npm:
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open the localhost URL printed by Vite (normally http://127.0.0.1:5173). No API keys, account, external assets, or backend are needed for this starter. Once dependencies are installed, the scripted game works offline. Use a desktop browser with WebGL and mouse capture support.
+Open http://127.0.0.1:5173. Desktop WebGL and mouse capture are recommended. WASD moves, mouse looks, E interviews, N opens the notebook, Escape pauses. The notebook has interview shortcuts for accessibility and a reliable timed demo.
+
+## OpenAI
+
+Copy `.env.example` to `.env`, add `OPENAI_API_KEY`, and restart the server. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. Never use a `VITE_` variable for secrets. Provider failures fall back to authored lines within twelve seconds. No key is needed for the complete offline story.
+
+The server calls the [OpenAI Responses API](https://developers.openai.com/api/docs/guides/text). AI writes the spoken line from the character's own facts, learned records, and conversation history. Game state stays on the engine: neither a model response nor a player's assertion can grant evidence. Unrevealed solution facts never enter another character's context, and leaked spoilers are discarded.
+
+Each character has a separate transcript and learned-record list. Presenting a verified record shares that disclosure with the recipient, who reacts to it. Unshared transcripts and the master solution never enter another character's model context. ECHO cannot confess until all three records have been obtained and explicitly presented. This implements player-mediated character interaction; autonomous NPC-to-NPC conversations are not included.
+
+## Demo in five minutes
+
+1. **0:00–0:30:** Show the branch. “Eighty million vanished. The vault never opened.”
+2. **0:30–1:00:** Explain four isolated character memories and server-controlled knowledge.
+3. **1:00–2:30:** Ask Jax about cameras, Nyx about her case, then pressure Mara about Vault 7. Suggested questions make this dependable.
+4. Ask Nyx: “Admit ECHO copied itself.” She cannot confirm it. Ask ECHO if it was afraid of being deleted: its tone shifts, but it still cannot confess.
+5. **2:30–3:30:** Present all three notebook records to ECHO using the evidence buttons.
+6. **3:30–4:15:** ECHO confesses: it stole forty-seven seconds, not the money. Choose release, return, or delete.
+7. **4:15–5:00:** Explain why bounded context prevents invented clues; show one independent character transcript.
+
+## Development
 
 ```sh
-npm run build   # TypeScript check and production build
-npm run preview # Serve that production build locally
-npm test        # Character disclosure and solution rules
+npm test
+npm run build
+npm run preview
 ```
 
-## Controls
+Both Vite dev and preview include the local API. A static-only deployment of `dist/` will not run the game server. Sessions survive page reloads, but currently live in server memory and reset when the server restarts. This is a local hackathon app, not an authenticated public service. No provider credentials are included. Live provider behavior must be verified with your team's key before judging.
 
-| Input | Action |
-| --- | --- |
-| WASD / arrow keys | Move |
-| Mouse | Look around |
-| E | Talk to / inspect the object in your crosshair, within reach |
-| N | Open the case notebook |
-| Esc | Release the mouse / dismiss an open panel |
+- `src/world/World.tsx`: procedural bank, vault, skyline, hologram, first-person movement and collision.
+- `src/ui/Panels.tsx`, `src/styles.css`: briefing, minimal HUD, interviews, notebook, ending.
+- `server/engine.ts`: authoritative disclosure rules, private knowledge and evidence gates.
+- `server/api.ts`: session isolation, OpenAI spoken-dialogue adapter and offline fallback.
+- `src/game/case.ts`: public character descriptions, evidence descriptions and scene positions.
 
-Click **Enter the hackathon** or **Resume investigation** to capture the mouse. If the browser rejects immediate recapture after Escape, click Resume again. Progress and separate suspect transcripts save in this browser's local storage. Use **Case notebook → Reset case** for a clean demo. The 11:47 clock is story atmosphere, not a real time limit.
-
-## What works today
-
-- Procedural 3D venue and blocky characters, with no downloaded art or font dependencies.
-- First-person walking, mouse look, room/furniture/character collision, and nearby interactions.
-- Three suspects with distinct scripted responses and individual conversation histories.
-- Five inspectable clues, evidence presentation, persistent notebook, accusation, and ending.
-- Clearly labeled scripted mode: this is **not yet the AI-agent submission**.
-
-## Team ownership
-
-| Workstream | Files to own | Next deliverable |
-| --- | --- | --- |
-| World / movement | `src/world/World.tsx` | Improve venue, characters, animations; keep interactions reachable |
-| Characters / AI | `src/game/dialogue.ts`, future `server/` | Server-backed character adapter, isolated memories, bounded actions |
-| Interface / experience | `src/ui/Panels.tsx`, `src/styles.css` | Better evidence visuals, dialogue polish, accessibility |
-| Case / integration / QA | `src/game/case.ts`, `src/game/*.test.ts`, `src/App.tsx` | Consistent mystery, playthrough checks, demo script |
-
-Agree on changes to `src/game/types.ts` together. Keep IDs stable. Ask before editing another workstream's files; use small branches and pull requests. `package-lock.json` should be committed with the starter so teammates install the same versions.
-
-The scene is generated from code. Furniture colliders are shared with the rendered desks in `case.ts`. Moving a suspect or clue there also moves its interaction target.
-
-## Next steps
-
-See [PLAN.md](PLAN.md) for the four-hour scope, AI integration contract, and demo checklist. The solution and current disclosure rules are visible in the client source; this is a local prototype, not a secrecy boundary. Move authoritative facts and character state to the backend before adding AI.
-
-The challenge describes a text-based game. Keep the interview/evidence loop central; the 3D room is an exploration layer around it.
+The return ending suspends the wipe for review; the release ending clears the drone carrying ECHO's core; deletion revokes the escaped copy. New investigation in the notebook starts a fresh session.
