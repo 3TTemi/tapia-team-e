@@ -20,7 +20,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #8ff7da;
 }
@@ -37,22 +37,22 @@
 }
 .translation-captions strong {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   color: #abcacb;
   margin-bottom: 4px;
 }
 .translation-source {
-  font-size: 15px;
+  font-size: 22px;
   color: #d6e4e6;
 }
 .translation-english {
-  font-size: 21px;
+  font-size: 32px;
   font-weight: 550;
   border-top: 1px solid #ffffff24;
   padding-top: 10px;
 }
 .translation-captions.large .translation-english {
-  font-size: 27px;
+  font-size: 40px;
 }
 .translation-controls {
   display: flex;
@@ -87,6 +87,9 @@
     max-height: 44vh;
   }
   .translation-english {
+    font-size: 26px;
+  }
+  .translation-source {
     font-size: 18px;
   }
 }
