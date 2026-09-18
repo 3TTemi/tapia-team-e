@@ -25,6 +25,137 @@ function Limb({
   );
 }
 
+// The animated groups remain the rig: details below move with the existing
+// body, arm and head refs used by interviews and the opening cinematic.
+function Hand({ side, skin }: { side: number; skin: string }) {
+  return (
+    <group position={[side * 0.018, -0.34, 0.035]}>
+      <Solid
+        position={[0, 0, 0]}
+        size={[0.115, 0.155, 0.08]}
+        round={0.035}
+        color={skin}
+        rough={0.85}
+      />
+      <Limb
+        position={[-side * 0.055, 0.015, 0.018]}
+        length={0.04}
+        radius={0.025}
+        color={skin}
+        rotation={[0.25, 0, side * 0.35]}
+      />
+    </group>
+  );
+}
+
+function Workwear({ name, trim }: { name: string; trim: string }) {
+  const guard = name === "Boone";
+  const janitor = name === "Milo";
+  const contractor = name === "Ellis";
+  return (
+    <>
+      {/* A split collar leaves the neck visible and follows the shoulder line. */}
+      {[-1, 1].map((side) => (
+        <Solid
+          key={side}
+          position={[side * 0.105, 1.365, 0.184]}
+          rotation={[0, 0, side * 0.35]}
+          size={[0.14, 0.09, 0.03]}
+          round={0.015}
+          color={trim}
+        />
+      ))}
+      <Solid
+        position={[0, 1.05, 0.198]}
+        size={[0.018, 0.49, 0.013]}
+        color={trim}
+      />
+      <Solid
+        position={[0, 0.785, 0]}
+        size={[0.57, 0.055, 0.36]}
+        round={0.018}
+        color="#343a36"
+      />
+      <Solid
+        position={[0, 0.786, 0.191]}
+        size={[0.065, 0.04, 0.016]}
+        round={0.008}
+        color="#a69a7d"
+      />
+      {(janitor || contractor) && (
+        <>
+          <Solid
+            position={[0.17, 1.17, 0.201]}
+            size={[0.135, 0.15, 0.023]}
+            round={0.012}
+            color={trim}
+          />
+          <Solid
+            position={[0.17, 1.225, 0.216]}
+            size={[0.145, 0.025, 0.014]}
+            round={0.005}
+            color={janitor ? "#a9b7a0" : "#ad9c7c"}
+          />
+          <Solid
+            position={[-0.16, 1.23, 0.208]}
+            size={[0.13, 0.045, 0.018]}
+            round={0.008}
+            color="#d9d1b4"
+          />
+        </>
+      )}
+      {guard && (
+        <>
+          <mesh position={[-0.16, 1.23, 0.212]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.048, 0.038, 0.018, 6]} />
+            <meshStandardMaterial
+              color="#c9b67d"
+              metalness={0.5}
+              roughness={0.55}
+            />
+          </mesh>
+          <Solid
+            position={[0.18, 1.17, 0.221]}
+            size={[0.09, 0.13, 0.045]}
+            round={0.01}
+            color="#20333b"
+          />
+          <Solid
+            position={[0.2, 1.275, 0.22]}
+            size={[0.013, 0.105, 0.013]}
+            color="#424f52"
+          />
+          {[-1, 1].map((side) => (
+            <Solid
+              key={side}
+              position={[side * 0.255, 1.38, 0.01]}
+              size={[0.12, 0.022, 0.2]}
+              round={0.008}
+              color="#b5aa89"
+            />
+          ))}
+        </>
+      )}
+      {janitor && (
+        <Solid
+          position={[0.27, 0.775, 0.2]}
+          size={[0.085, 0.11, 0.025]}
+          round={0.01}
+          color="#a8a792"
+        />
+      )}
+      {contractor && (
+        <Solid
+          position={[-0.15, 0.96, 0.21]}
+          size={[0.12, 0.14, 0.021]}
+          round={0.008}
+          color="#e0d9be"
+        />
+      )}
+    </>
+  );
+}
+
 export default function StylizedCharacter({
   position,
   color,
@@ -53,6 +184,25 @@ export default function StylizedCharacter({
   const legs = useRef<(Group | null)[]>([]);
   const skin =
     name === "Milo" ? "#946544" : name === "Boone" ? "#c3946f" : "#c2a07a";
+  const shirt =
+    name === "Milo"
+      ? "#637b70"
+      : name === "Boone"
+        ? "#3b5363"
+        : name === "Ellis"
+          ? "#8c8168"
+          : color;
+  const trim =
+    name === "Milo"
+      ? "#455c55"
+      : name === "Boone"
+        ? "#293e4b"
+        : name === "Ellis"
+          ? "#655f50"
+          : "#b8b29d";
+  const trousers = name === "Ellis" ? "#424b49" : "#293d48";
+  const hair =
+    name === "Ellis" ? "#605247" : name === "Milo" ? "#302f2b" : "#383b39";
   useFrame(({ camera, clock }) => {
     const time = animationTime?.current ?? clock.elapsedTime;
     const t = time + position[0];
@@ -124,63 +274,47 @@ export default function StylizedCharacter({
                   position={[x, -0.085, 0.25]}
                   length={0.3}
                   radius={0.095}
-                  color="#243948"
+                  color={trousers}
                   rotation={[Math.PI / 2, 0, 0]}
                 />
                 <Limb
                   position={[x, -0.47, 0.49]}
                   length={0.42}
                   radius={0.09}
-                  color="#243948"
+                  color={trousers}
                 />
               </>
             ) : (
               <Limb
                 position={[x, -0.28, 0]}
                 length={0.57}
-                radius={0.13}
-                color="#243948"
+                radius={0.112}
+                color={trousers}
               />
             )}
             <Solid
               position={[x, -0.68, pose === "seated" ? 0.56 : 0.1]}
-              size={[0.27, 0.17, 0.47]}
-              round={0.075}
-              color="#34464d"
+              size={[0.235, 0.15, 0.36]}
+              round={0.055}
+              color="#303b3f"
               rough={0.75}
             />
             <Solid
               position={[x, -0.735, pose === "seated" ? 0.56 : 0.1]}
-              size={[0.28, 0.04, 0.46]}
+              size={[0.245, 0.035, 0.37]}
               round={0.018}
-              color="#aeb5a8"
+              color="#747c72"
             />
           </group>
         ))}
         <Solid
           position={[0, 1.08, 0]}
-          size={[0.65, 0.68, 0.39]}
-          round={0.14}
-          color={color}
+          size={[0.63, 0.68, 0.38]}
+          round={0.12}
+          color={shirt}
           rough={0.92}
         />
-        <Solid
-          position={[0, 1.33, 0.205]}
-          size={[0.25, 0.14, 0.03]}
-          round={0.013}
-          color="#c8c7b1"
-        />
-        <Solid
-          position={[0, 1.04, 0.205]}
-          size={[0.017, 0.51, 0.018]}
-          color="#5a7379"
-        />
-        <Solid
-          position={[0.17, 1.14, 0.213]}
-          size={[0.1, 0.14, 0.016]}
-          round={0.01}
-          color="#d9d5bd"
-        />
+        <Workwear name={name} trim={trim} />
         {pose === "seated" ? (
           [-1, 1].map((side) => (
             <group key={side}>
@@ -188,14 +322,14 @@ export default function StylizedCharacter({
                 position={[side * 0.35, 1.17, 0.06]}
                 length={0.24}
                 radius={0.1}
-                color={color}
+                color={shirt}
                 rotation={[-0.32, 0, -side * 0.09]}
               />
               <Limb
                 position={[side * 0.32, 1, 0.15]}
                 length={0.14}
                 radius={0.075}
-                color={color}
+                color={shirt}
                 rotation={[Math.PI / 2, 0, 0]}
               />
               <Limb
@@ -215,16 +349,17 @@ export default function StylizedCharacter({
             >
               <Limb
                 position={[0, 0, 0]}
-                length={0.4}
-                radius={0.115}
-                color={color}
+                length={0.34}
+                radius={0.105}
+                color={shirt}
               />
               <Limb
-                position={[-0.03, -0.34, 0.03]}
-                length={0.09}
-                radius={0.09}
-                color={skin}
+                position={[0, -0.22, 0.025]}
+                length={0.06}
+                radius={0.081}
+                color={trim}
               />
+              <Hand side={-1} skin={skin} />
             </group>
             <group
               ref={rightArm}
@@ -233,52 +368,75 @@ export default function StylizedCharacter({
             >
               <Limb
                 position={[0, 0, 0]}
-                length={0.4}
-                radius={0.115}
-                color={color}
+                length={0.34}
+                radius={0.105}
+                color={shirt}
               />
               <Limb
-                position={[0.03, -0.34, 0.03]}
-                length={0.09}
-                radius={0.09}
-                color={skin}
+                position={[0, -0.22, 0.025]}
+                length={0.06}
+                radius={0.081}
+                color={trim}
               />
+              <Hand side={1} skin={skin} />
             </group>
           </>
         )}
         <Limb position={[0, 1.46, 0]} length={0.08} radius={0.1} color={skin} />
         <group ref={head} position={[0, 1.73, 0]}>
-          <mesh scale={[0.275, 0.32, 0.255]} castShadow>
+          <mesh scale={[0.235, 0.295, 0.225]} castShadow>
             <sphereGeometry args={[1, 20, 16]} />
             <meshStandardMaterial color={skin} roughness={0.75} />
           </mesh>
           <mesh
-            position={[0, 0.17, -0.035]}
-            scale={[0.285, 0.17, 0.254]}
+            position={[0, 0.165, -0.04]}
+            scale={[0.242, name === "Milo" ? 0.145 : 0.165, 0.222]}
             castShadow
           >
             <sphereGeometry args={[1, 18, 12]} />
-            <meshStandardMaterial color="#2b3030" roughness={0.9} />
+            <meshStandardMaterial color={hair} roughness={0.9} />
           </mesh>
-          {[-0.095, 0.095].map((x) => (
+          {[-1, 1].map((side) => (
+            <mesh
+              key={side}
+              position={[side * 0.228, -0.015, -0.015]}
+              scale={[0.04, 0.065, 0.04]}
+              castShadow
+            >
+              <sphereGeometry args={[1, 10, 8]} />
+              <meshStandardMaterial color={skin} roughness={0.85} />
+            </mesh>
+          ))}
+          {name === "Ellis" && (
+            <mesh
+              position={[0.08, 0.215, 0.035]}
+              rotation={[0, 0, -0.2]}
+              scale={[0.15, 0.08, 0.19]}
+              castShadow
+            >
+              <sphereGeometry args={[1, 14, 10]} />
+              <meshStandardMaterial color={hair} roughness={0.95} />
+            </mesh>
+          )}
+          {[-0.082, 0.082].map((x) => (
             <group key={x}>
-              <mesh position={[x, 0.025, 0.241]} scale={[0.027, 0.035, 0.013]}>
+              <mesh position={[x, 0.025, 0.212]} scale={[0.022, 0.026, 0.012]}>
                 <sphereGeometry args={[1, 8, 6]} />
                 <meshStandardMaterial color="#172731" />
               </mesh>
               <Solid
-                position={[x, 0.09, 0.233]}
-                size={[0.07, 0.025, 0.019]}
+                position={[x, 0.082, 0.206]}
+                size={[0.065, 0.018, 0.016]}
                 round={0.009}
-                color="#3a352e"
+                color={hair}
               />
             </group>
           ))}
-          <mesh position={[0, -0.04, 0.264]} scale={[0.044, 0.055, 0.048]}>
+          <mesh position={[0, -0.04, 0.23]} scale={[0.034, 0.047, 0.035]}>
             <sphereGeometry args={[1, 10, 8]} />
             <meshStandardMaterial color={skin} />
           </mesh>
-          <group ref={mouth} position={[0, -0.14, 0.236]}>
+          <group ref={mouth} position={[0, -0.135, 0.204]}>
             <Solid
               position={[0, 0, 0]}
               size={[0.09, 0.016, 0.017]}
