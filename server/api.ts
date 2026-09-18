@@ -49,6 +49,62 @@ export function createApi(config: () => AIConfig) {
       });
       return;
     }
+    if (route === "/api/tts" && req.method === "POST") {
+      try {
+        let raw = "";
+        for await (const chunk of req) {
+          raw += chunk.toString();
+          if (Buffer.byteLength(raw) > 12000) {
+            send(res, 413, { error: "Speech text is too large." });
+            return;
+          }
+        }
+        const data = JSON.parse(raw);
+        const voiceId = config().elevenLabsVoiceIds?.[data?.suspectId];
+        if (
+          !data ||
+          typeof data.text !== "string" ||
+          !data.text.trim() ||
+          data.text.length > 2000 ||
+          typeof data.suspectId !== "string" ||
+          !voiceId
+        ) {
+          send(res, 400, { error: "Invalid speech request." });
+          return;
+        }
+        const c = config();
+        if (!c.elevenLabsApiKey) {
+          send(res, 503, { error: "ElevenLabs is not configured." });
+          return;
+        }
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+          {
+            method: "POST",
+            headers: {
+              Accept: "audio/mpeg",
+              "Content-Type": "application/json",
+              "xi-api-key": c.elevenLabsApiKey,
+            },
+            body: JSON.stringify({
+              text: data.text,
+              model_id: c.elevenLabsModel || "eleven_multilingual_v2",
+            }),
+            signal: AbortSignal.timeout(30000),
+          },
+        );
+        if (!response.ok) {
+          console.error("ElevenLabs request failed:", response.status);
+          send(res, 502, { error: "ElevenLabs could not synthesize the reply." });
+          return;
+        }
+        const audio = Buffer.from(await response.arrayBuffer()).toString("base64");
+        send(res, 200, { url: `data:audio/mpeg;base64,${audio}` });
+      } catch {
+        send(res, 502, { error: "Voice service unavailable." });
+      }
+      return;
+    }
     if (route !== "/api/interview" || req.method !== "POST") {
       send(res, 404, { error: "Unknown endpoint." });
       return;

@@ -4,6 +4,9 @@ export interface AIConfig {
   scripted: boolean;
   openaiApiKey?: string;
   openaiModel?: string;
+  elevenLabsApiKey?: string;
+  elevenLabsModel?: string;
+  elevenLabsVoiceIds?: Record<string, string>;
 }
 export class ProviderError extends Error {
   constructor(
