@@ -2,7 +2,13 @@ import { Suspense, useEffect, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { Vector3, type Group } from "three";
-import { clues, obstacles, characters } from "../game/case";
+import {
+  clues,
+  isClueCollected,
+  obstacles,
+  characters,
+  suspects,
+} from "../game/case";
 import type { ClueId, Position, SuspectId, TargetId } from "../game/types";
 import CityEnvironment from "./CityEnvironment";
 import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
@@ -70,6 +76,21 @@ function Label({
           style={{ opacity: 0 }}
         >
           {children}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function TalkGuide({ target }: { target: SuspectId }) {
+  const suspect = suspects.find((s) => s.id === target);
+  if (!suspect) return null;
+  return (
+    <group position={[suspect.position[0], 2.65, suspect.position[2]]}>
+      <Html center style={{ pointerEvents: "none" }}>
+        <div className="talk-guide" aria-hidden="true">
+          <span className="talk-guide-label">Talk to {suspect.name}</span>
+          <span className="talk-guide-arrow">▼</span>
         </div>
       </Html>
     </group>
@@ -216,6 +237,7 @@ function Room({
   bubbleText,
   thinking,
   streaming,
+  talkGuide,
 }: {
   collected: ClueId[];
   target: TargetId | null;
@@ -225,6 +247,7 @@ function Room({
   bubbleText: string | null;
   thinking: boolean;
   streaming?: boolean;
+  talkGuide: SuspectId | null;
 }) {
   return (
     <>
@@ -286,12 +309,13 @@ function Room({
           line={talkingTo === s.id ? bubbleText : null}
         />
       ))}
+      {talkGuide && <TalkGuide target={talkGuide} />}
       {clues.map((c) => (
         <group
           key={c.id}
           position={[c.position[0], c.position[1] + 0.35, c.position[2]]}
         >
-          {!collected.includes(c.id) && (
+          {!isClueCollected(c, collected) && (
             <mesh
               rotation={[0, Math.PI / 4, Math.PI / 4]}
               scale={target === c.id ? 1.4 : 1}
@@ -455,6 +479,7 @@ export default function World({
   bubbleText,
   thinking,
   streaming,
+  talkGuide,
   onTarget,
   onLock,
   cinematic,
@@ -476,6 +501,7 @@ export default function World({
   bubbleText: string | null;
   thinking: boolean;
   streaming?: boolean;
+  talkGuide: SuspectId | null;
   onTarget: (id: TargetId | null) => void;
   onLock: (locked: boolean) => void;
   cinematic: boolean;
@@ -519,6 +545,7 @@ export default function World({
             bubbleText={bubbleText}
             thinking={thinking}
             streaming={streaming}
+            talkGuide={talkGuide}
           />
           <Player
             active={active}

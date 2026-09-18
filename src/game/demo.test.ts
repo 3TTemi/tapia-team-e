@@ -26,7 +26,7 @@ test("demo step advances through the rehearsed route", () => {
   );
   const collecting: SaveGame = {
     ...freshGame(),
-    clues: ["heat", "dock"],
+    clues: ["photo"],
   };
   assert.equal(
     computeDemoStep({ ...base, game: collecting })?.id,
@@ -34,7 +34,7 @@ test("demo step advances through the rehearsed route", () => {
   );
   const ready: SaveGame = {
     ...freshGame(),
-    clues: ["dock", "log", "photo", "badge", "heat"],
+    clues: ["log", "photo", "badge", "heat"],
   };
   assert.equal(computeDemoStep({ ...base, game: ready })?.id, "interview_alex");
   ready.histories.alex = [

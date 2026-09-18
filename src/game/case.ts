@@ -46,15 +46,6 @@ export const characters: Suspect[] = [...suspects, translationWitness];
 
 export const clues: Clue[] = [
   {
-    id: "dock",
-    title: "Empty cash-transfer tray",
-    category: "ROBBERY SCENE",
-    position: [-3.6, 1.15, -4.5],
-    icon: "◇",
-    description:
-      "18:04 — a courier collected the bank’s sealed cash bag. The tray and locks are intact. The pickup was marked ‘security authorized,’ but the bank ordered no collection tonight.",
-  },
-  {
     id: "log",
     title: "Security inactivity log",
     category: "SECURITY RECORD",
@@ -73,29 +64,32 @@ export const clues: Clue[] = [
       "17:59 — the office camera caught Alex putting the manager’s gift bottle into his cleaning cart. He said he never left the lobby. The office door looks onto the staff corridor.",
   },
   {
-    id: "badge",
-    title: "Staff-corridor access record",
-    category: "ACCESS RECORD",
-    position: [0, 1.1, -7.8],
-    icon: "≡",
-    description:
-      "18:01 — staff corridor opened with contractor pass E-17: Sam.\nThe corridor leads to the security desk.\nSam claimed to have stayed in the public lobby.",
-  },
-  {
     id: "heat",
-    title: "Courier pickup instructions",
-    category: "DISPATCH RECORD",
-    position: [-5.8, 1.3, 2.2],
+    title: "Contractor pickup file",
+    category: "ACCESS & DISPATCH",
+    position: [0, 1.1, -7.8],
     icon: "ϟ",
+    grants: ["badge", "heat"],
     description:
-      "18:02 — bank security terminal: unscheduled cash pickup.\nBooked under Sam’s verified contractor account E-17.\nRunner instruction: ‘Collect the sealed cash bag at 18:04. Bring it to me behind the bank.’",
+      "18:01 — staff corridor opened with contractor pass E-17: Sam.\n18:02 — bank security terminal: unscheduled cash pickup booked under Sam’s E-17 account.\nRunner instruction: ‘Collect the sealed cash bag at 18:04. Bring it to me behind the bank.’",
   },
 ];
+
+export function clueIdsOnCollect(clue: Clue) {
+  return clue.grants ?? [clue.id];
+}
+
+export function isClueCollected(clue: Clue, collected: Clue["id"][]) {
+  return clueIdsOnCollect(clue).every((id) => collected.includes(id));
+}
+
+export function collectedWorldClueCount(collected: Clue["id"][]) {
+  return clues.filter((clue) => isClueCollected(clue, collected)).length;
+}
 
 // Shared by rendered furniture and player collision. x/z are center coordinates.
 export const obstacles = [
   { x: -4.5, z: -4.5, width: 3.6, depth: 1.5 },
   { x: 4.5, z: -4.5, width: 3.6, depth: 1.5 },
-  { x: -5.8, z: 2.2, width: 1.8, depth: 1.3 },
   { x: 0, z: -7.8, width: 2.5, depth: 1.1 },
 ];

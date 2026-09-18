@@ -1,3 +1,4 @@
+import { collectedWorldClueCount } from "./case";
 import type { ClueId, SaveGame, SuspectId } from "./types";
 
 export type DemoStepId =
@@ -16,12 +17,12 @@ export interface DemoStep {
   hint: string;
 }
 
-export const CLUE_COUNT = 5;
+export const CLUE_COUNT = 3;
 
 export const RECOMMENDED_CLUES: Record<SuspectId, ClueId[]> = {
   alex: ["photo"],
   jordan: ["log"],
-  sam: ["badge", "heat"],
+  sam: ["heat"],
 };
 
 export const SAM_DEMO_QUESTION = "Did you stay in the lobby all night?";
@@ -40,22 +41,22 @@ const STEPS: Record<Exclude<DemoStepId, "complete">, DemoStep> = {
   collect: {
     id: "collect",
     label: "Collect evidence",
-    hint: "Inspect all 5 markers with E. Read each card, then return to the room.",
+    hint: "Inspect all 3 markers with E. Read each card, then return to the room.",
   },
   interview_alex: {
     id: "interview_alex",
     label: "Pressure Alex",
-    hint: "Talk to Alex (left). Click Manager's office photo — do not type.",
+    hint: "Follow the arrow to Alex. Click Manager's office photo — do not type.",
   },
   interview_jordan: {
     id: "interview_jordan",
     label: "Pressure Jordan",
-    hint: "Talk to Jordan (right). Click Security inactivity log — then walk away.",
+    hint: "Follow the arrow to Jordan. Click Security inactivity log — then walk away.",
   },
   interview_sam: {
     id: "interview_sam",
     label: "Break Sam",
-    hint: `Ask Sam: "${SAM_DEMO_QUESTION}" Then present staff-corridor access, then courier pickup.`,
+    hint: `Follow the arrow to Sam. Ask: "${SAM_DEMO_QUESTION}" Then present the contractor pickup file.`,
   },
   submit: {
     id: "submit",
@@ -91,6 +92,15 @@ export function samConfessed(game: SaveGame) {
   return /planned the robbery/i.test(suspectText(game, "sam"));
 }
 
+export function nextTalkTarget(game: SaveGame): SuspectId | null {
+  if (game.solved || collectedWorldClueCount(game.clues) < CLUE_COUNT)
+    return null;
+  if (!alexAdmitted(game)) return "alex";
+  if (!jordanAdmitted(game)) return "jordan";
+  if (!samConfessed(game)) return "sam";
+  return null;
+}
+
 export function computeDemoStep(input: {
   demoMode: boolean;
   cinematic: boolean;
@@ -100,8 +110,9 @@ export function computeDemoStep(input: {
   if (!input.demoMode) return null;
   if (input.game.solved) return COMPLETE;
   if (input.cinematic || !input.started) return STEPS.opening;
-  if (input.game.clues.length < CLUE_COUNT) {
-    return input.game.clues.length === 0 ? STEPS.enter_bank : STEPS.collect;
+  const found = collectedWorldClueCount(input.game.clues);
+  if (found < CLUE_COUNT) {
+    return found === 0 ? STEPS.enter_bank : STEPS.collect;
   }
   if (!alexAdmitted(input.game)) return STEPS.interview_alex;
   if (!jordanAdmitted(input.game)) return STEPS.interview_jordan;

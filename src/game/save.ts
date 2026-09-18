@@ -1,6 +1,11 @@
 import { currentCharacterNames } from "./names";
 import type { SaveGame } from "./types";
-import { clues, characters } from "./case";
+import { clueIdsOnCollect, clues, characters } from "./case";
+import type { ClueId } from "./types";
+
+const COLLECTABLE_CLUES = new Set(
+  clues.flatMap((clue) => clueIdsOnCollect(clue)),
+);
 
 const KEY = "last-commit-bank-save-v2";
 export const freshGame = (): SaveGame => ({
@@ -19,7 +24,9 @@ export function loadGame(): SaveGame {
       typeof raw.solved !== "boolean"
     )
       return freshGame();
-    if (!raw.clues.every((id: unknown) => clues.some((c) => c.id === id)))
+    if (
+      !raw.clues.every((id: unknown) => COLLECTABLE_CLUES.has(id as ClueId))
+    )
       return freshGame();
     raw.histories.lucia ??= [];
     for (const s of characters) {
