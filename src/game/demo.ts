@@ -23,6 +23,7 @@ export const RECOMMENDED_CLUES: Record<SuspectId, ClueId[]> = {
   alex: ["photo"],
   jordan: ["log"],
   sam: ["heat"],
+  lucia: [],
 };
 
 export const SAM_DEMO_QUESTION = "Did you stay in the lobby all night?";
