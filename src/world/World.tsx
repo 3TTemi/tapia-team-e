@@ -9,7 +9,7 @@ import {
   characters,
   suspects,
 } from "../game/case";
-import type { CharacterVisualAction } from "../game/actions";
+import { isActionActive, type CharacterVisualAction } from "../game/actions";
 import type { ClueId, Position, SuspectId, TargetId } from "../game/types";
 import CityEnvironment from "./CityEnvironment";
 import { hasClearSight, isWorldBlocked, PLAYER_SPAWN } from "./layout";
@@ -149,7 +149,7 @@ function Hacker({
       color={color}
       name={name}
       speaking={speaking}
-      facing={Boolean(line)}
+      facing={Boolean(line) && !isActionActive(visualAction)}
       visualAction={visualAction}
     >
       {line && name !== "Gabby" ? (

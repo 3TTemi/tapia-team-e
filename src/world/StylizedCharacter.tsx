@@ -1,8 +1,9 @@
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import {
   isActionActive,
+  turnAroundProgress,
   type CharacterVisualAction,
 } from "../game/actions";
 import type { Position } from "../game/types";
@@ -181,6 +182,10 @@ export default function StylizedCharacter({
   const rightArm = useRef<Group>(null);
   const mouth = useRef<Group>(null);
   const legs = useRef<(Group | null)[]>([]);
+  const spinFromYaw = useRef<number | null>(null);
+  useEffect(() => {
+    if (visualAction?.kind === "turn-around") spinFromYaw.current = null;
+  }, [visualAction?.startedAt, visualAction?.kind]);
   const skin =
     name === "Alex" ? "#946544" : name === "Jordan" ? "#c3946f" : "#c2a07a";
   const shirt =
@@ -220,28 +225,42 @@ export default function StylizedCharacter({
     const time = animationTime?.current ?? clock.elapsedTime;
     const t = time + position[0];
     const action = isActionActive(visualAction) ? visualAction : null;
+    const turning = action?.kind === "turn-around";
+    const turnProgress = turning ? turnAroundProgress(action) : 0;
+    const turnEase = 1 - Math.pow(1 - turnProgress, 3);
     if (root.current) {
       const dx = camera.position.x - position[0];
       const dz = camera.position.z - position[2];
-      let targetYaw = 0;
-      if (action?.kind === "face-player" || (facing && !action))
-        targetYaw = Math.atan2(dx, dz);
-      else if (
-        action?.target &&
-        (action.kind === "face-target" ||
-          action.kind === "point-at-target" ||
-          action.kind === "startled")
-      ) {
-        const [tx, , tz] = action.target;
-        targetYaw = Math.atan2(tx - position[0], tz - position[2]);
+      if (turning) {
+        if (spinFromYaw.current === null)
+          spinFromYaw.current = root.current.rotation.y;
+        root.current.rotation.y =
+          spinFromYaw.current + Math.PI * turnEase;
+      } else {
+        let targetYaw = 0;
+        if (action?.kind === "face-player" || (facing && !action))
+          targetYaw = Math.atan2(dx, dz);
+        else if (
+          action?.target &&
+          (action.kind === "face-target" ||
+            action.kind === "point-at-target" ||
+            action.kind === "startled")
+        ) {
+          const [tx, , tz] = action.target;
+          targetYaw = Math.atan2(tx - position[0], tz - position[2]);
+        }
+        let diff = targetYaw - root.current.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        root.current.rotation.y += diff * (action ? 0.22 : 0.12);
       }
-      let diff = targetYaw - root.current.rotation.y;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      root.current.rotation.y += diff * (action ? 0.18 : 0.12);
     }
     if (body.current) {
+      body.current.rotation.y = 0;
       if (pose === "seated") body.current.position.y = -0.18;
+      else if (turning)
+        body.current.position.y =
+          0.02 + Math.abs(Math.sin(time * 11)) * 0.05 * (1 - turnProgress * 0.4);
       else if (action?.kind === "startled")
         body.current.position.y = -0.04 + Math.sin(t * 16) * 0.02;
       else if (pose === "running")
@@ -249,34 +268,53 @@ export default function StylizedCharacter({
       else if (speaking) body.current.position.y = Math.sin(t * 7) * 0.03;
       else body.current.position.y = Math.sin(t * 1.5) * 0.012;
       body.current.position.z =
-        action?.kind === "startled" ? -0.22 : 0;
+        action?.kind === "startled" ? -0.22 : turning ? -0.05 * turnEase : 0;
+      if (turning)
+        body.current.rotation.y = Math.sin(turnProgress * Math.PI) * 0.12;
     }
-    if (pose === "running" || pose === "walking")
+    if (pose === "running" || pose === "walking" || turning)
       legs.current.forEach((leg, i) => {
-        if (leg)
+        if (!leg) return;
+        if (turning)
+          leg.rotation.x =
+            Math.sin(time * 13 + i * Math.PI) * 0.42 * (1 - turnProgress * 0.35);
+        else if (pose === "running" || pose === "walking")
           leg.rotation.x =
             Math.sin(time * (pose === "running" ? 14 : 7) + i * Math.PI) *
             (pose === "running" ? 0.65 : 0.3);
+        else leg.rotation.x = 0;
       });
     if (head.current) {
-      if (speaking) {
+      if (turning) {
+        head.current.rotation.x = 0.12 * (1 - turnProgress);
+        head.current.rotation.y = 0.35 * (1 - turnEase);
+      } else if (speaking) {
         head.current.rotation.x = Math.sin(t * 9) * 0.08;
         head.current.rotation.y = Math.sin(t * 3.2) * 0.14;
-      } else if (pose === "standing")
+      } else if (pose === "standing") {
+        head.current.rotation.x = 0;
         head.current.rotation.y = Math.sin(t * 0.45) * 0.065;
-      else {
+      } else {
         head.current.rotation.x = 0;
         head.current.rotation.y = 0;
       }
     }
     if (leftArm.current) {
-      leftArm.current.rotation.x = speaking
-        ? 0.08 + Math.sin(t * 2.4) * 0.1
-        : 0.12;
-      leftArm.current.rotation.z = speaking ? -0.22 : -0.12;
+      if (turning) {
+        leftArm.current.rotation.x = 0.28 - turnProgress * 0.18;
+        leftArm.current.rotation.z = -0.28 - Math.sin(time * 10) * 0.06;
+      } else {
+        leftArm.current.rotation.x = speaking
+          ? 0.08 + Math.sin(t * 2.4) * 0.1
+          : 0.12;
+        leftArm.current.rotation.z = speaking ? -0.22 : -0.12;
+      }
     }
     if (rightArm.current) {
-      if (action?.kind === "point-at-target") {
+      if (turning) {
+        rightArm.current.rotation.x = -0.35 + turnProgress * 0.25;
+        rightArm.current.rotation.z = 0.18 + Math.sin(time * 10) * 0.08;
+      } else if (action?.kind === "point-at-target") {
         rightArm.current.rotation.x = -1.42;
         rightArm.current.rotation.z = 0.08;
       } else if (action?.kind === "startled") {
