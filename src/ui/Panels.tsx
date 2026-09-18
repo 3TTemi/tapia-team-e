@@ -128,7 +128,13 @@ export function DialogueHud({
     getChatStatus()
       .then((status) => {
         if (active)
-          setMode(status.mode === "gemini" ? "Gemini ready" : "Scripted mode");
+          setMode(
+            status.mode === "gemini"
+              ? "Gemini ready"
+              : status.mode === "openai"
+                ? "OpenAI ready"
+                : "Scripted mode",
+          );
       })
       .catch(() => {
         if (active) setMode("Service unavailable");
@@ -154,11 +160,13 @@ export function DialogueHud({
       });
       onMessages(suspect.id, reply.history);
       setMode(
-        reply.mode === "gemini"
-          ? "Gemini live"
-          : reply.mode === "guarded"
-            ? "Authored · fact-check fallback"
-            : "Scripted mode",
+        reply.mode === "openai"
+          ? "OpenAI live"
+          : reply.mode === "gemini"
+            ? "Gemini live"
+            : reply.mode === "guarded"
+              ? "Authored · fact-check fallback"
+              : "Scripted mode",
       );
       setNotice(reply.notice ?? "");
       setInput("");

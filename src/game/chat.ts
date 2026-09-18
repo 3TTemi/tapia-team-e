@@ -27,13 +27,13 @@ export function resetInterviews() {
   }
 }
 export interface ChatStatus {
-  mode: "gemini" | "scripted";
+  mode: "openai" | "gemini" | "scripted";
   model: string;
   configured: boolean;
 }
 export interface ChatReply {
   text: string;
-  mode: "gemini" | "scripted" | "guarded";
+  mode: "openai" | "gemini" | "scripted" | "guarded";
   notice?: string;
   history: Message[];
 }

@@ -2,6 +2,8 @@ export interface AIConfig {
   apiKey: string;
   model: string;
   scripted: boolean;
+  openaiApiKey?: string;
+  openaiModel?: string;
 }
 export class ProviderError extends Error {
   constructor(
@@ -26,7 +28,7 @@ export async function generateJSON(
         "Content-Type": "application/json",
         "x-goog-api-key": config.apiKey,
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: input }] }],

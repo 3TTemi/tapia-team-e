@@ -36,9 +36,16 @@ export function createApi(config: () => AIConfig) {
     if (route === "/api/status" && req.method === "GET") {
       const c = config();
       send(res, 200, {
-        mode: c.apiKey && !c.scripted ? "gemini" : "scripted",
+        mode: c.scripted
+          ? "scripted"
+          : c.apiKey
+            ? "gemini"
+            : c.openaiApiKey
+              ? "openai"
+              : "scripted",
         model: c.model,
-        configured: !!c.apiKey,
+        configured: !!(c.apiKey || c.openaiApiKey),
+        backupConfigured: !!c.openaiApiKey,
       });
       return;
     }

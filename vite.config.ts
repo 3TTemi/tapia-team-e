@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const api = createApi(() => ({
     apiKey: process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || "",
     model: process.env.GEMINI_MODEL || env.GEMINI_MODEL || "gemini-3.8-flash",
+    openaiApiKey: process.env.OPENAI_API_KEY || env.OPENAI_API_KEY || "",
+    openaiModel: process.env.OPENAI_MODEL || env.OPENAI_MODEL || "gpt-4.1-mini",
     scripted: (process.env.DIALOGUE_MODE || env.DIALOGUE_MODE) === "scripted",
   }));
   return {

@@ -1,3 +1,4 @@
+import { createGenerator } from "./providers";
 import { scriptedReply } from "../src/game/dialogue";
 import { getCharacterContext } from "./characters";
 import {
@@ -17,15 +18,17 @@ export interface InterviewInput {
 }
 export interface InterviewResult {
   text: string;
-  mode: "gemini" | "scripted" | "guarded";
+  mode: "openai" | "gemini" | "scripted" | "guarded";
   notice?: string;
 }
 export async function interview(
   input: InterviewInput,
   memory: CharacterMemory,
   config: AIConfig,
-  generate = generateJSON,
+  overrideGenerate?: typeof generateJSON,
 ): Promise<InterviewResult> {
+  const router = createGenerator(config);
+  const generate = overrideGenerate ?? router.generate;
   const presented = [
     ...new Set([
       ...memory.presented,
@@ -43,9 +46,9 @@ export async function interview(
     mode: "scripted",
     notice: config.scripted
       ? "Offline scripted mode."
-      : "Add GEMINI_API_KEY to .env and restart to enable live conversations.",
+      : "Add GEMINI_API_KEY or OPENAI_API_KEY to .env and restart to enable live conversations.",
   };
-  if (config.apiKey && !config.scripted) {
+  if ((config.apiKey || config.openaiApiKey) && !config.scripted) {
     try {
       const draft = (await generate(
         config,
@@ -76,7 +79,14 @@ export async function interview(
       )) as { supported?: unknown };
       result =
         guard.supported === true
-          ? { text: draft.reply.trim(), mode: "gemini" }
+          ? {
+              text: draft.reply.trim(),
+              mode: router.provider,
+              notice:
+                router.provider === "openai"
+                  ? "OpenAI is handling this interview."
+                  : undefined,
+            }
           : {
               text: context.fallback,
               mode: "guarded",
@@ -86,6 +96,8 @@ export async function interview(
     } catch (error) {
       const reason = error instanceof ProviderError ? error.code : "connection";
       const notices: Record<string, string> = {
+        openai:
+          "OpenAI backup failed. Check its key, model access, quota, or connection.",
         quota: "Gemini quota/rate limit reached.",
         model: "Configured Gemini model is unavailable. Check GEMINI_MODEL.",
         access:
