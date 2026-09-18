@@ -1,3 +1,4 @@
+import type { CharacterVisualAction } from "./actions";
 import type { ClueId, Message, SuspectId } from "./types";
 
 const KEY = "last-commit-interview-session-v2";
@@ -38,6 +39,7 @@ export interface ChatReply {
   translation?: string;
   mode: "openai" | "gemini" | "scripted" | "guarded";
   notice?: string;
+  action?: CharacterVisualAction | null;
   history: Message[];
 }
 
@@ -76,6 +78,7 @@ export async function requestInterviewStream(
     onStart?: (info: { mode: ChatReply["mode"] }) => void;
     onToken: (text: string) => void;
     onReplace?: (text: string, notice?: string) => void;
+    onAction?: (action: CharacterVisualAction) => void;
   },
 ): Promise<ChatReply> {
   const response = await fetch("/api/interview", {
@@ -126,6 +129,12 @@ export async function requestInterviewStream(
           typeof payload.notice === "string" ? payload.notice : undefined,
         );
         handlers.onToken(payload.text);
+      } else if (
+        parsed.event === "action" &&
+        payload.action &&
+        typeof payload.action === "object"
+      ) {
+        handlers.onAction?.(payload.action as CharacterVisualAction);
       } else if (parsed.event === "done") {
         finalReply = payload as unknown as ChatReply;
       } else if (parsed.event === "error") {

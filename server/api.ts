@@ -209,6 +209,7 @@ export function createApi(config: () => AIConfig, store = createStore()) {
             token: (_delta, text) => sendSSE(res, "token", { text }),
             replace: (text, notice) =>
               sendSSE(res, "replace", { text, notice }),
+            action: (action) => sendSSE(res, "action", { action }),
           },
         );
         await store.write(id!, session);

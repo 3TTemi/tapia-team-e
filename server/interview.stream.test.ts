@@ -33,6 +33,7 @@ test("interviewStream emits tokens before persisting a guarded fallback", async 
         return { text: "I was mopping.", provider: "gemini" as const };
       },
       generate: async () => ({ supported: false }),
+      decideAction: async () => null,
     },
   );
 
@@ -63,6 +64,7 @@ test("scripted stream typewrites the authored fallback", async () => {
         }
         return full.trim();
       },
+      decideAction: async () => null,
     },
   );
 
@@ -78,7 +80,10 @@ test("streamed pickup file unlocks both bundled records for Sam", async () => {
     memory,
     { ...config, scripted: true },
     { start: () => {}, token: () => {}, replace: () => {} },
-    { scriptedStream: async (text) => text },
+    {
+      scriptedStream: async (text) => text,
+      decideAction: async () => null,
+    },
   );
   assert.deepEqual(memory.presented, ["badge", "heat"]);
   assert.match(result.text, /I planned the robbery/);

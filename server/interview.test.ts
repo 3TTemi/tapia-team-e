@@ -7,6 +7,7 @@ import { interview } from "./interview";
 import { createStore, newSession } from "./store";
 import { ProviderError } from "./gemini";
 const config = { apiKey: "test-key", model: "test-model", scripted: false };
+const skipAction = async () => null;
 test("only witness facts and own memory reach generator; accepted reply is persisted", async () => {
   const session = newSession();
   session.characters.jordan.history.push({
@@ -25,6 +26,7 @@ test("only witness facts and own memory reach generator; accepted reply is persi
         ? { reply: "I was mopping the lobby." }
         : { supported: true };
     },
+    skipAction,
   );
   assert.equal(result.mode, "gemini");
   assert.equal(session.characters.alex.history.length, 2);
@@ -38,6 +40,7 @@ test("invented reply is discarded by verifier", async () => {
     config,
     async () =>
       ++calls === 1 ? { reply: "INVENTED_SECRET" } : { supported: false },
+    skipAction,
   );
   assert.equal(result.mode, "guarded");
   assert.ok(!result.text.includes("INVENTED_SECRET"));
@@ -51,6 +54,7 @@ test("provider failure gives visible fallback and retains evidence", async () =>
     async () => {
       throw new ProviderError("quota", "private provider body");
     },
+    skipAction,
   );
   assert.equal(result.mode, "scripted");
   assert.match(result.notice!, /quota/);
@@ -94,7 +98,7 @@ test("Spanish witness returns paired captions and persists them separately", asy
     { suspectId: "lucia", message: "What did you see?" },
     memory,
     config,
-    async (_c, system, input, schema) => {
+      async (_c, system, input, schema) => {
       if (++calls === 1) {
         assert.match(system, /Spanish/);
         assert.ok(JSON.stringify(schema).includes("translation"));
@@ -103,6 +107,7 @@ test("Spanish witness returns paired captions and persists them separately", asy
       assert.match(input, /I saw a courier/);
       return { supported: true };
     },
+    skipAction,
   );
   assert.equal(result.translation, "I saw a courier.");
   assert.equal(memory.history[1].translation, result.translation);
@@ -118,6 +123,7 @@ test("missing or rejected translation gives matched authored Spanish and English
       newSession().characters.lucia,
       config,
       async () => (++calls === 1 ? reply : { supported: false }),
+      skipAction,
     );
     assert.match(result.text, /Vi a un mensajero/);
     assert.match(result.translation!, /I saw a courier/);

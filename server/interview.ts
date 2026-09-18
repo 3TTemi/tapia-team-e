@@ -1,3 +1,5 @@
+import type { CharacterVisualAction } from "../src/game/actions";
+import { decideCharacterAction } from "./actionDecision";
 import { emitScriptedStream, streamReplyText } from "./streaming";
 import { createGenerator } from "./providers";
 import { clues, clueIdsOnCollect } from "../src/game/case";
@@ -29,12 +31,14 @@ export interface InterviewResult {
   translation?: string;
   mode: "openai" | "gemini" | "scripted" | "guarded";
   notice?: string;
+  action?: CharacterVisualAction | null;
 }
 export async function interview(
   input: InterviewInput,
   memory: CharacterMemory,
   config: AIConfig,
   overrideGenerate?: typeof generateJSON,
+  decideAction: typeof decideCharacterAction = decideCharacterAction,
 ): Promise<InterviewResult> {
   const bilingual = input.suspectId === "lucia";
   const fallbackTranslation =
@@ -60,6 +64,17 @@ export async function interview(
       ? "Offline scripted mode."
       : "Add GEMINI_API_KEY or OPENAI_API_KEY to .env and restart to enable live conversations.",
   };
+  const actionPromise = decideAction(
+    {
+      suspectId: input.suspectId,
+      message: input.message,
+      characterName: context.name,
+      persona: context.persona,
+    },
+    config,
+    generate,
+  );
+
   if ((config.apiKey || config.openaiApiKey) && !config.scripted) {
     try {
       const draft = (await generate(
@@ -144,6 +159,7 @@ export async function interview(
   }
   if (bilingual && !result.translation)
     result.translation = fallbackTranslation;
+  result.action = await actionPromise;
   memory.presented = presented;
   memory.history.push(
     { role: "player", text: input.message },
@@ -164,6 +180,7 @@ export interface StreamEmit {
   }) => void;
   token: (delta: string, text: string) => void;
   replace: (text: string, notice?: string) => void;
+  action?: (action: CharacterVisualAction) => void;
 }
 
 function witnessPrompt(context: ReturnType<typeof getCharacterContext>) {
@@ -233,10 +250,18 @@ export async function interviewStream(
     streamReply?: typeof streamReplyText;
     generate?: ReturnType<typeof createGenerator>["generate"];
     scriptedStream?: typeof emitScriptedStream;
+    decideAction?: typeof decideCharacterAction;
   } = {},
 ): Promise<InterviewResult> {
+  const decideAction = deps.decideAction ?? decideCharacterAction;
   if (input.suspectId === "lucia") {
-    const result = await interview(input, memory, config, deps.generate);
+    const result = await interview(
+      input,
+      memory,
+      config,
+      deps.generate,
+      decideAction,
+    );
     emit.start({ mode: result.mode });
     emit.token(result.text, result.text);
     return result;
@@ -252,6 +277,19 @@ export async function interviewStream(
     ]),
   ];
   const context = buildContext(input, memory, presented);
+  const actionPromise = decideAction(
+    {
+      suspectId: input.suspectId,
+      message: input.message,
+      characterName: context.name,
+      persona: context.persona,
+    },
+    config,
+    generate,
+  ).then((action) => {
+    if (action) emit.action?.(action);
+    return action;
+  });
   let result: InterviewResult = {
     text: context.fallback,
     mode: "scripted",
@@ -325,6 +363,7 @@ export async function interviewStream(
     result = { ...result, text: draft || context.fallback };
   }
 
+  result.action = await actionPromise;
   commitTurn(input, memory, presented, result);
   return result;
 }

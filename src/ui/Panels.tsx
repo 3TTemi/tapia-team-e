@@ -1,11 +1,7 @@
 import TranslationCaptions from "./TranslationCaptions";
 import { useEffect, useRef, useState } from "react";
 import { clues, suspects, witnessOpeningTranslation } from "../game/case";
-import {
-  commandReaction,
-  parsePlayerCommand,
-  type CharacterVisualAction,
-} from "../game/actions";
+import type { CharacterVisualAction } from "../game/actions";
 import { RECOMMENDED_CLUES, SAM_DEMO_QUESTION } from "../game/demo";
 import { evaluateAccusation } from "../game/dialogue";
 import {
@@ -182,39 +178,37 @@ export function DialogueHud({
     onStreaming(true);
     onStreamText("");
     setError("");
-    const command = parsePlayerCommand(message, suspect.id);
-    if (command) {
-      onCharacterAction(suspect.id, command);
-      onStreamText(commandReaction(suspect.id, command.kind));
-      onThinking(false);
-    }
     try {
-      const reply =
-        suspect.id === "lucia"
-          ? await requestInterview({
-              suspectId: suspect.id,
-              message,
-              presentedClue,
-              collectedClues: game.clues,
-            })
-          : await requestInterviewStream(
-              {
-                suspectId: suspect.id,
-                message,
-                presentedClue,
-                collectedClues: game.clues,
-              },
-              {
-                onToken: (text) => {
-                  if (text) onThinking(false);
-                  onStreamText(text);
-                },
-                onReplace: (text, notice) => {
-                  onStreamText(text);
-                  if (notice) setNotice(notice);
-                },
-              },
-            );
+      let reply;
+      if (suspect.id === "lucia") {
+        reply = await requestInterview({
+          suspectId: suspect.id,
+          message,
+          presentedClue,
+          collectedClues: game.clues,
+        });
+        if (reply.action) onCharacterAction(suspect.id, reply.action);
+      } else {
+        reply = await requestInterviewStream(
+          {
+            suspectId: suspect.id,
+            message,
+            presentedClue,
+            collectedClues: game.clues,
+          },
+          {
+            onToken: (text) => {
+              if (text) onThinking(false);
+              onStreamText(text);
+            },
+            onReplace: (text, notice) => {
+              onStreamText(text);
+              if (notice) setNotice(notice);
+            },
+            onAction: (action) => onCharacterAction(suspect.id, action),
+          },
+        );
+      }
       onMessages(suspect.id, reply.history);
       setMode(
         reply.mode === "openai"
