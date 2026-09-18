@@ -95,11 +95,14 @@ export default function OpeningCinematic({
     time.current = seconds;
     playerTime.current = seconds < 7.8 ? Math.max(0, seconds - 5) : 0;
     const frame = setCamera(seconds);
+    if (seconds < 0.15) audio.current?.start();
     if (frame.shot !== currentShot.current) {
       currentShot.current = frame.shot;
       onShot(frame.shot);
     }
     if (seconds >= 3 && seconds < 5) audio.current?.blast();
+    if (seconds >= 5 && seconds < 5.2) audio.current?.escape();
+    if (seconds >= 8 && seconds < 8.2) audio.current?.handoff();
     if (seated.current) seated.current.visible = seconds < 5;
     if (player.current) {
       player.current.visible = seconds >= 5 && seconds < 9;
