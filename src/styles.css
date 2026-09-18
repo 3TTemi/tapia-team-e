@@ -685,6 +685,43 @@ kbd {
   border-color: var(--lime);
   box-shadow: 0 0 0 1px #d7f08a33;
 }
+.talk-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -100%);
+  user-select: none;
+  white-space: nowrap;
+}
+.talk-guide-label {
+  background: #101812ee;
+  border: 1px solid var(--lime);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px #0008;
+  color: var(--lime);
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  text-transform: uppercase;
+}
+.talk-guide-arrow {
+  animation: talk-guide-bounce 0.9s ease-in-out infinite;
+  color: var(--lime);
+  font-size: 22px;
+  line-height: 1;
+  text-shadow: 0 0 12px #d7f08a88;
+}
+@keyframes talk-guide-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
 @keyframes thinking-dots {
   0% {
     opacity: 0.25;

@@ -1,8 +1,14 @@
 import { resetInterviews } from "./game/chat";
-import { computeDemoStep } from "./game/demo";
+import { computeDemoStep, nextTalkTarget } from "./game/demo";
 import { useCallback, useEffect, useRef, useState } from "react";
 import World from "./world/World";
-import { clues, suspects, characters } from "./game/case";
+import {
+  clueIdsOnCollect,
+  clues,
+  collectedWorldClueCount,
+  characters,
+  suspects,
+} from "./game/case";
 import { freshGame, loadGame, persistGame } from "./game/save";
 import type { Message, SuspectId, TargetId } from "./game/types";
 import { submitCase, type CaseVerdict } from "./game/submission";
@@ -194,12 +200,18 @@ export default function App() {
     setSpeaking(false);
     setPanel(next);
     const clue = clues.find((c) => c.id === next);
-    if (clue)
-      setGame((prev) =>
-        prev.clues.includes(clue.id)
+    if (clue) {
+      const granted = clueIdsOnCollect(clue);
+      setGame((prev) => {
+        const nextClues = [...prev.clues];
+        for (const id of granted) {
+          if (!nextClues.includes(id)) nextClues.push(id);
+        }
+        return nextClues.length === prev.clues.length
           ? prev
-          : { ...prev, clues: [...prev.clues, clue.id] },
-      );
+          : { ...prev, clues: nextClues };
+      });
+    }
   }, []);
   const confirmCase = (suspectId: SuspectId) => {
     const result = submitCase(game, suspectId);
@@ -308,6 +320,10 @@ export default function App() {
     started,
     game,
   });
+  const talkGuide =
+    started && !cinematic && !verdict && !panel && !talkingTo
+      ? nextTalkTarget(game)
+      : null;
   const clue = clues.find((c) => c.id === panel);
   const targetName =
     target === "submission"
@@ -335,6 +351,7 @@ export default function App() {
           bubbleText={bubbleText}
           thinking={thinking}
           streaming={streaming}
+          talkGuide={talkGuide}
           onTarget={setTarget}
           onLock={onLock}
           cinematic={cinematic}
@@ -402,7 +419,8 @@ export default function App() {
                   : "Find out who arranged the robbery."}
             </h3>
             <p>
-              {game.clues.length} / {clues.length} clues collected{" "}
+              {collectedWorldClueCount(game.clues)} / {clues.length} clues
+              collected{" "}
               <span>·</span>{" "}
               {suspects.filter((s) => game.histories[s.id].length > 0).length} /
               3 suspects interviewed
@@ -496,7 +514,10 @@ export default function App() {
                 className="notebook-button"
                 onClick={() => open("notebook")}
               >
-                <kbd>N</kbd> Case notebook <span>{game.clues.length}/5</span>
+                <kbd>N</kbd> Case notebook{" "}
+                <span>
+                  {collectedWorldClueCount(game.clues)}/{clues.length}
+                </span>
               </button>
             </footer>
           )}

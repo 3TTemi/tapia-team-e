@@ -17,6 +17,7 @@ export interface Clue {
   position: Position;
   description: string;
   icon: string;
+  grants?: ClueId[];
 }
 export interface Message {
   role: "player" | "suspect";
