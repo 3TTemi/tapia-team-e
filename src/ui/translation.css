@@ -1,0 +1,100 @@
+.translation-captions {
+  position: fixed;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, calc(100vw - 32px));
+  z-index: 25;
+  border: 1px solid #6fe0cb;
+  border-radius: 16px;
+  background: #081a23f5;
+  color: #fff;
+  padding: 18px 22px;
+  box-shadow: 0 12px 40px #0008;
+  max-height: 48vh;
+  overflow: auto;
+  text-align: left;
+}
+.translation-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8ff7da;
+}
+.translation-status > span:last-child {
+  margin-left: auto;
+  border: 1px solid #528f87;
+  border-radius: 5px;
+  padding: 3px 6px;
+}
+.translation-captions p {
+  margin: 12px 0;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+.translation-captions strong {
+  display: block;
+  font-size: 11px;
+  color: #abcacb;
+  margin-bottom: 4px;
+}
+.translation-source {
+  font-size: 15px;
+  color: #d6e4e6;
+}
+.translation-english {
+  font-size: 21px;
+  font-weight: 550;
+  border-top: 1px solid #ffffff24;
+  padding-top: 10px;
+}
+.translation-captions.large .translation-english {
+  font-size: 27px;
+}
+.translation-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.translation-controls button {
+  background: #15363d;
+  border: 1px solid #75b3af;
+  border-radius: 6px;
+  color: white;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.translation-controls button:focus-visible {
+  outline: 3px solid #ffda83;
+  outline-offset: 2px;
+}
+.translation-controls button:disabled {
+  opacity: 0.6;
+}
+.translation-controls small {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #b4c5ca;
+}
+@media (max-width: 600px) {
+  .translation-captions {
+    top: 12px;
+    padding: 12px 14px;
+    max-height: 44vh;
+  }
+  .translation-english {
+    font-size: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .translation-captions {
+    scroll-behavior: auto;
+  }
+}
+@media (min-width: 1000px) {
+  .translation-captions { left:auto; right:24px; transform:none; width:410px; max-height:50vh; }
+}

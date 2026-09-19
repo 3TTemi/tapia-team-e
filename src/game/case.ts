@@ -1,24 +1,95 @@
-import type { Clue, Suspect } from './types'
+import type { Clue, Suspect } from "./types";
 
 // Public world content. Dialogue rules live separately in dialogue.ts.
 export const suspects: Suspect[] = [
-  { id: 'alex', name: 'Alex', role: 'YOUR TEAMMATE', color: '#ae9fff', position: [-4.3, 0, -1.6], opening: 'Sparky is missing? Okay. Okay. Before we panic… did you check the build logs?' },
-  { id: 'jordan', name: 'Jordan', role: 'THE RIVAL', color: '#f2ab72', position: [4.3, 0, -1.6], opening: 'Rough timing. Thirteen minutes before judging? I was at the snack table. Mostly.' },
-  { id: 'sam', name: 'Sam', role: 'EVENT VOLUNTEER', color: '#83d8b1', position: [3.4, 0, -6.8], opening: 'Everything is under control. Please keep the aisles clear. And… don’t touch any loose batteries.' },
-]
+  {
+    id: "alex",
+    name: "Alex",
+    role: "BANK JANITOR",
+    color: "#ae9fff",
+    position: [-4.3, 0, -1.6],
+    opening:
+      "Missing cash? I mop floors, detective. I kept to the lobby. Nobody needs to bother the manager about me.",
+  },
+  {
+    id: "jordan",
+    name: "Jordan",
+    role: "SECURITY GUARD",
+    color: "#f2ab72",
+    position: [4.3, 0, -1.6],
+    opening:
+      "I watched the cameras all evening. Nothing unusual. This bank is secure. Was secure.",
+  },
+  {
+    id: "sam",
+    name: "Sam",
+    role: "REGULAR CUSTOMER · CONTRACTOR",
+    color: "#83d8b1",
+    position: [3.4, 0, -6.8],
+    opening:
+      "Terrible business. I only came to collect my repair invoice. I stayed in the public lobby, but I’m happy to help.",
+  },
+];
+
+export const translationWitness: Suspect = {
+  id: "lucia",
+  name: "Gabby",
+  role: "WITNESS · ESPAÑOL",
+  color: "#59bfc0",
+  position: [-3.2, 0, 19.5],
+  opening:
+    "Hola, soy Gabby. Vi a un mensajero recoger una bolsa del banco. Puedo contarte lo que vi.",
+};
+export const witnessOpeningTranslation =
+  "Hi, I’m Gabby. I saw a courier collect a bag from the bank. I can tell you what I saw.";
+export const characters: Suspect[] = [...suspects, translationWitness];
 
 export const clues: Clue[] = [
-  { id: 'dock', title: 'Empty charging dock', category: 'SCENE OF THE DISAPPEARANCE', position: [-3.6, 1.15, -4.5], icon: '◇', description: 'Sparky’s dock is empty. The charging cable was carefully unplugged, not torn out. There’s a faint scorch mark beneath the battery connector.' },
-  { id: 'log', title: 'Build failure log', category: 'DIGITAL EVIDENCE', position: [-5.3, 1.4, -4.5], icon: '>_', description: '23:39 — deploy failed. User: alex.\n23:40 — dashboard message changed to “DEMO CANCELLED.”\nThe message predates Sparky’s disappearance.' },
-  { id: 'photo', title: 'A suspicious snapshot', category: 'WITNESS EVIDENCE', position: [5.2, 1.15, -4.5], icon: '▣', description: 'A print from Jordan’s instant camera shows your prototype design. In the background, a green-sleeved volunteer pushes a cart. A familiar square antenna sticks out from under a jacket.' },
-  { id: 'badge', title: 'Repair-room access slip', category: 'ACCESS RECORD', position: [0, 1.1, -7.8], icon: '≡', description: '23:44 — repair room opened.\nBadge V-03: Sam, event volunteer.\nEquipment intake: one small electronic device.' },
-  { id: 'heat', title: 'Battery alert', category: 'HARDWARE TELEMETRY', position: [-5.8, 1.3, 2.2], icon: 'ϟ', description: '23:42 — SPARKY / battery temperature critical.\nSafety instruction: disconnect charger and move device to the repair station.\nAlert acknowledged by volunteer V-03.' },
-]
+  {
+    id: "log",
+    title: "Security inactivity log",
+    category: "SECURITY RECORD",
+    position: [-5.3, 1.4, -4.5],
+    icon: ">_",
+    description:
+      "17:55–18:06 — no camera checks or patrol check-ins from Jordan.\nThe security terminal stayed signed in and unlocked.\nJordan claims he watched the cameras the whole time.",
+  },
+  {
+    id: "photo",
+    title: "Manager’s office photo",
+    category: "CAMERA STILL",
+    position: [5.2, 1.15, -4.5],
+    icon: "▣",
+    description:
+      "17:59 — the office camera caught Alex putting the manager’s gift bottle into his cleaning cart. He said he never left the lobby. The office door looks onto the staff corridor.",
+  },
+  {
+    id: "heat",
+    title: "Contractor pickup file",
+    category: "ACCESS & DISPATCH",
+    position: [0, 1.1, -7.8],
+    icon: "ϟ",
+    grants: ["badge", "heat"],
+    description:
+      "18:01 — staff corridor opened with contractor pass E-17: Sam.\n18:02 — bank security terminal: unscheduled cash pickup booked under Sam’s E-17 account.\nRunner instruction: ‘Collect the sealed cash bag at 18:04. Bring it to me behind the bank.’",
+  },
+];
+
+export function clueIdsOnCollect(clue: Clue) {
+  return clue.grants ?? [clue.id];
+}
+
+export function isClueCollected(clue: Clue, collected: Clue["id"][]) {
+  return clueIdsOnCollect(clue).every((id) => collected.includes(id));
+}
+
+export function collectedWorldClueCount(collected: Clue["id"][]) {
+  return clues.filter((clue) => isClueCollected(clue, collected)).length;
+}
 
 // Shared by rendered furniture and player collision. x/z are center coordinates.
 export const obstacles = [
   { x: -4.5, z: -4.5, width: 3.6, depth: 1.5 },
   { x: 4.5, z: -4.5, width: 3.6, depth: 1.5 },
-  { x: -5.8, z: 2.2, width: 1.8, depth: 1.3 },
   { x: 0, z: -7.8, width: 2.5, depth: 1.1 },
-]
+];

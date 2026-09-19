@@ -29,11 +29,11 @@ Suggested request:
 
 ```ts
 type InterviewRequest = {
-  sessionId: string
-  suspectId: 'alex' | 'jordan' | 'sam'
-  message: string
-  presentedClue?: 'dock' | 'log' | 'photo' | 'badge' | 'heat'
-}
+  sessionId: string;
+  suspectId: "alex" | "jordan" | "sam";
+  message: string;
+  presentedClue?: "dock" | "log" | "photo" | "badge" | "heat";
+};
 ```
 
 The browser's transcript is for display, not trusted memory. The server validates the suspect, message length, collected evidence, and session; loads that suspect's history; builds a limited context; calls the model; validates the reply/action; then saves the resulting turn. Keep the model/provider behind an adapter so the workshop's configured provider or Hermes integration can be used without rewriting the game. Confirm workshop requirements before picking an orchestration framework.
@@ -42,12 +42,12 @@ Server-owned state per character:
 
 ```ts
 type CharacterState = {
-  knownFactIds: string[]
-  heardClaimIds: string[]
-  disclosedSecretIds: string[]
-  conversation: { speaker: string; text: string }[]
-  goal: string
-}
+  knownFactIds: string[];
+  heardClaimIds: string[];
+  disclosedSecretIds: string[];
+  conversation: { speaker: string; text: string }[];
+  goal: string;
+};
 ```
 
 Distinguish an unverified player claim from a fact. Saying “Sam confessed” must not silently mark the claim as true. Only witnesses to a conversation receive its events. Do not send other characters' private transcripts or the complete solution to every model call.
@@ -62,14 +62,14 @@ Persist server sessions in ignored local JSON files initially. Avoid vector data
 
 ## Case bible — spoilers for teammates
 
-| Time | Canonical event |
-| --- | --- |
-| 23:39 | Alex's deploy fails. |
-| 23:40 | Alex writes DEMO CANCELLED, then conceals the mistake. |
-| 23:42 | Sparky's battery alert triggers; volunteer Sam acknowledges it. |
+| Time  | Canonical event                                                                                          |
+| ----- | -------------------------------------------------------------------------------------------------------- |
+| 23:39 | Alex's deploy fails.                                                                                     |
+| 23:40 | Alex writes DEMO CANCELLED, then conceals the mistake.                                                   |
+| 23:42 | Sparky's battery alert triggers; volunteer Sam acknowledges it.                                          |
 | 23:43 | Sam unplugs and moves Sparky on a cart. Jordan's photo catches the cart while copying the team's design. |
-| 23:44 | Sam accesses the repair room and logs the device. |
-| 23:47 | Player returns and investigates. |
+| 23:44 | Sam accesses the repair room and logs the device.                                                        |
+| 23:47 | Player returns and investigates.                                                                         |
 
 - **Alex:** knows their own software mistake; no firsthand account of the move. Build log unlocks admission. Nervous technical speech; wants to avoid blame.
 - **Jordan:** knows about copying the design and seeing Sam's cart; does not know why Sam moved it. Photo unlocks admission and witness account. Competitive, charming speech.

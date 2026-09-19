@@ -1,0 +1,1 @@
+Capital One logo: vector paths and colors extracted unchanged from the public header SVG at https://www.capitalone.com/about/newsroom/ on 2026-09-18. Angular framework attributes removed; intrinsic rasterization dimensions added. Capital One retains its trademark rights. Used as prototype in-world signage; no endorsement is implied.

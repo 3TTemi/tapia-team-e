@@ -1,42 +1,70 @@
-import type { ClueId, Message, SuspectId } from './types'
+import type { ClueId, Message, SuspectId } from "./types";
 
 export interface DialogueRequest {
-  suspectId: SuspectId
-  message: string
-  presentedClue?: ClueId
-  history: Message[]
+  suspectId: SuspectId;
+  message: string;
+  presentedClue?: ClueId;
+  presentedClues?: ClueId[];
+  history: Message[];
 }
 
-/** Scripted adapter for the starter. Replace with a POST to a local backend.
- * Never put provider keys or the authoritative mystery solution in browser code.
- * Only explicitly presented evidence influences this character's response.
- */
-export async function getReply(request: DialogueRequest): Promise<string> {
-  return scriptedReply(request)
-}
+export function scriptedReply({
+  suspectId,
+  message,
+  presentedClue,
+  presentedClues = [],
+}: DialogueRequest): string {
+  // Only explicit evidence presentation advances a character's disclosures.
+  // Free text and conversation history never count as proof.
+  if (suspectId === "lucia")
+    return "Vi a un mensajero recoger una bolsa del banco. No vi su cara con claridad. Revisa el registro de recogida.";
+  const shown = new Set(presentedClues);
+  if (presentedClue) shown.add(presentedClue);
 
-export function scriptedReply({ suspectId, message, presentedClue, history }: DialogueRequest): string {
-  if (suspectId === 'alex') {
-    if (presentedClue === 'log') return 'Fine. I broke the build. I put “DEMO CANCELLED” on the dashboard because I panicked. But that was before Sparky vanished. I didn’t move the robot.'
-    if (presentedClue === 'dock' || presentedClue === 'heat') return 'That looks like a hardware problem. My mistake was software. Check with whoever handles equipment safety.'
-    if (presentedClue) return 'I was debugging at my laptop. I can’t tell you what happened somewhere else.'
-    if (history.some(m => m.role === 'suspect' && m.text.startsWith('Fine.'))) return 'I already admitted the failed deploy. The cancellation message was mine; the disappearance wasn’t. Follow the hardware evidence.'
-    return 'I was fixing a dependency conflict. That’s all. If you think I did something, show me the build log.'
+  if (suspectId === "alex") {
+    if (shown.has("photo"))
+      return "Fine. I stole the manager’s gift liquor. From his doorway, I saw Sam ditch a courier jacket by the staff corridor at 18:03. I kept quiet to hide my own theft. I never touched the cash.";
+    if (presentedClue)
+      return "I clean here. I don’t handle cash or security records. If you’ve got something showing where I was, let’s see it.";
+    return /office|bottle|liquor|manager|steal/i.test(message)
+      ? "The manager’s office? Closed, far as I know. Unless you’ve got a picture, I was in the lobby."
+      : "Mopping the lobby. That’s my evening. The office camera sees that end of the bank, if you need to check.";
   }
-  if (suspectId === 'jordan') {
-    if (presentedClue === 'photo') return 'You found the photo. Yes, I photographed your design. Bad look, I know. But look behind the desk: I saw Sam pushing that cart toward the repair room. The thing under the jacket had Sparky’s antenna.'
-    if (presentedClue) return 'That’s interesting, but I didn’t see that happen. I’m only going to speak for what I actually witnessed.'
-    if (history.some(m => m.role === 'suspect' && m.text.startsWith('You found'))) return 'Like I said: Sam, a cart, and a square antenna. I shouldn’t have taken that photo, but it gives you a lead.'
-    return /photo|camera|copy/i.test(message) ? 'Lots of people take photos at hackathons. Have you actually got one with my name on it?' : 'I was getting snacks. You can’t accuse someone just because their demo is better. Got any evidence?'
+
+  if (suspectId === "jordan") {
+    if (shown.has("log"))
+      return "All right. I fell asleep. The cameras ran, but I wasn’t watching, and I left the security terminal unlocked. Anyone reaching my desk could authorize a pickup. Check the staff-corridor access record.";
+    if (presentedClue)
+      return "That doesn’t tell you what happened at my desk. Check the security log. I followed procedure. Mostly.";
+    return /sleep|nap|camera|terminal|watch/i.test(message)
+      ? "Eyes on the cameras. Whole shift. If you’re challenging that, bring the security log."
+      : "At my post, watching the cameras. Nobody reported trouble until the cash was gone. That’s my statement.";
   }
-  if (presentedClue === 'heat') return 'Okay. I acknowledged that alert. Sparky’s battery was overheating, so I unplugged it and moved it to the repair room. I covered it to keep people from touching it. I should have left a note. I was afraid you’d blame me.'
-  if (history.some(m => m.role === 'suspect' && m.text.startsWith('Okay.'))) return 'Sparky is safe in the repair room. I moved it because of the battery alert. I’m sorry I didn’t tell your team immediately.'
-  if (presentedClue === 'photo') return 'That is my cart. I move equipment all night. The picture doesn’t explain why I was moving it.'
-  if (presentedClue === 'badge') return 'Of course my badge opens the repair room. I’m the volunteer responsible for equipment. Check the safety terminal if you want the whole picture.'
-  if (presentedClue === 'dock') return 'A scorch mark? You should check the battery telemetry terminal by the entrance.'
-  return 'I’m responsible for keeping this event safe. I won’t speculate. If there was an equipment issue, there will be a safety alert.'
+
+  if (shown.has("badge") && shown.has("heat"))
+    return "I planned the robbery. Repair visits taught me Jordan’s routine. I used his unlocked terminal to send a runner for the cash. The courier jacket got me past a glance; I ditched it afterward. The runner thought it was a legitimate pickup.";
+  if (shown.has("badge"))
+    return "All right, I entered the staff corridor. A maintenance check. I should have said so. Being near the security desk doesn’t prove I ordered a cash pickup.";
+  if (shown.has("heat"))
+    return "Yes, I booked that runner. I handle collections for my repair work. A booking alone doesn’t place me at the bank’s security terminal.";
+  if (presentedClue === "dock")
+    return "No broken locks? Then someone made the pickup look official. There should be a dispatch record. Happy to help you find it.";
+  if (presentedClue)
+    return "That concerns someone else’s evening. I’m here about a repair invoice. Let’s stick to what the records actually show.";
+  return /corridor|jacket|courier|robbery|cash|guilty/i.test(message)
+    ? "I stayed in the public lobby. I know this place from repair jobs, but knowing a bank isn’t robbing it. What can you actually show me?"
+    : "I’m a regular here, and I do their repairs. Tonight I came for an invoice. The guard and janitor know the evening routine better than anyone.";
 }
 
-export function evaluateAccusation(suspect: SuspectId, motive: string, evidence: ClueId[]): boolean {
-  return suspect === 'sam' && motive === 'safety' && evidence.includes('heat') && (evidence.includes('badge') || evidence.includes('photo'))
+export function evaluateAccusation(
+  suspect: SuspectId,
+  motive: string,
+  evidence: ClueId[],
+): boolean {
+  return (
+    suspect === "sam" &&
+    motive === "robbery" &&
+    evidence.includes("badge") &&
+    evidence.includes("heat")
+  );
 }
